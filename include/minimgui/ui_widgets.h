@@ -341,7 +341,7 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window);
 void draw_collapsible(uiCommandList* cmdlist, uiWidget* widget, bool isCollapsed);
 
 // 绘制菜单窗口
-size_t draw_menu_window(uiCommandList* cmdlist, uiWindow* window);
+void draw_menu_window(uiCommandList* cmdlist, uiWindow* window);
 
 // 绘制菜单项
 void draw_menu_item(uiCommandList* cmdlist, uiWidget* widget, bool hovered, bool checked, bool hasSubMenu);

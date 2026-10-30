@@ -264,34 +264,6 @@ const float MENU_ITEM_MIN_WIDTH = 160.0f;
 const uiID MENU_HASH_MAGIC = 0x4D454E554D454E55ull;
 
 // 开始菜单窗口
-/*
-bool begin_menu_window(const uiChar* text, uiID id, uiVec2 pos, uiVec2 size, uiFlags flags = UI_PANEL_SCROLL | UI_PANEL_POPUP)
-{
-    uiWindow* window = find_window_by_id(id);
-
-    if (!window) {
-        window              = new uiWindow(UI_WIDGET_MENU, text, id, flags ? flags : UI_PANEL_SCROLL | UI_PANEL_POPUP);
-        window->bounds      = uiRect(pos.x, pos.y, size.x, size.y);
-        window->popupSize.w = 0.0f;
-        window->popupSize.h = 0.0f;
-        context()->windows.push_back(window);
-    }
-    window->bounds = uiRect(pos.x, pos.y, size.x, size.y);
-    bring_to_front(window);
-
-    // 压入布局
-    uiLayout* layout = push_layout(window);
-
-    // 绘制窗口
-    layout->data = draw_menu_window(window_cmdlist(), window);
-
-    // 剪裁客户区矩形
-    push_clip(nullptr, false);
-
-    return true;
-}
-*/
-
 bool begin_menu_window(const uiChar* text, uiID id, uiWidget* widget, bool isMenubar)
 {
     uiWindow* window = find_window_by_id(id);
@@ -299,46 +271,32 @@ bool begin_menu_window(const uiChar* text, uiID id, uiWidget* widget, bool isMen
     if (!window) {
         window              = new uiWindow(UI_WIDGET_MENU, text, id, UI_PANEL_SCROLL | UI_PANEL_PADDING | UI_PANEL_POPUP);
         window->bounds      = uiRect(0.0f, 0.0f, MENU_ITEM_MIN_WIDTH, style()->menuPadding.y * 2.0f);
-        window->popupSize.w = 0.0f;
-        window->popupSize.h = 0.0f;
+        window->popupSize.w = MENU_ITEM_MIN_WIDTH;
+        window->popupSize.h = style()->menuPadding.y * 2.0f;
         context()->windows.push_back(window);
     }
 
     set_flags_enabled(window->flags, UI_FLAGS_DISABLED, false);
     bring_to_front(window);
 
-    //*
-    uiRect rect    = widget->bounds;
-    uiVec2 pos     = isMenubar ? uiVec2(rect.x, rect.y + rect.h) : uiVec2(rect.x + rect.w - 4.0f, rect.y - 4.0f);
+    printf("%f\n", window->popupSize.w);
+
+    // 取上一帧的统计的尺寸大小
     uiVec2 size    = uiVec2(window->popupSize.w, window->popupSize.h);
-    window->bounds = uiRect(pos, size);
-
-    window->popupSize.w = MENU_ITEM_MIN_WIDTH;
-    window->popupSize.h = style()->menuPadding.y * 2.0f;
-
-    /*/
-    // 计算弹出位置
-    uiVec2 size(window->popupSize.w, window->popupSize.h);
     uiVec2 pos     = isMenubar
                          ? adjust_main_menu_popup_position(widget->bounds, size)
                          : adjust_sub_menu_popup_position(widget->bounds, size);
-    window->bounds = uiRect(pos.x, pos.y, size.x, size.y);
+    window->bounds = uiRect(pos, size);
 
-    ++window->data;          // 增加弹出计数
-    if (window->data == 1) { // 初始化弹出大小
-        window->popupSize.w = MENU_ITEM_MIN_WIDTH;
-        window->popupSize.h = style()->menuPadding.y * 2.0f;
-    }
-    else if (window->data == 2) { // 第二次弹出，窗口还没有计算好
-        return false;
-    }
-    //*/
+    // 重置弹出尺寸
+    window->popupSize.w = MENU_ITEM_MIN_WIDTH;
+    window->popupSize.h = style()->menuPadding.y * 2.0f;
 
     // 压入布局
-    uiLayout* layout = push_layout(window);
+    push_layout(window);
 
     // 绘制窗口
-    layout->data = draw_menu_window(&window->cmdlist, window);
+    draw_menu_window(&window->cmdlist, window);
 
     // 剪裁客户区矩形
     push_clip(nullptr, false);
@@ -354,39 +312,7 @@ void end_menu_window()
     // 获取当前布局容器
     uiPanel* panel = layout->container;
 
-    // 设置滚动范围
-    if (check_flags(panel->panelFlags, UI_PANEL_SCROLL)) {
-        const uiRect rect = layout->contentRect;
-        uiVec2 scrollMax  = layout->scrollMax;
-        if (rect.w < scrollMax.x) {
-            panel->scrollMax.x = scrollMax.x;
-            panel->scroll.x    = std::min(panel->scroll.x, scrollMax.x);
-        }
-        else {
-            panel->scrollMax.x = 0.0f;
-            panel->scroll.x    = 0.0f;
-        }
-        if (rect.h < scrollMax.y) {
-            panel->scrollMax.y = scrollMax.y;
-            panel->scroll.y    = std::min(panel->scroll.y, scrollMax.y);
-        }
-        else {
-            panel->scrollMax.y = 0.0f;
-            panel->scroll.y    = 0.0f;
-        }
-    }
-
-    // 修正菜单窗口弹出坐标、顶点大小
-    // 这里无法解决菜单弹出问题
-    /*
-    size_t id              = layout->data;
-    uiCommandList* cmdlist = window_cmdlist();
-
-    cmdlist->points(id + 1).y = static_cast<uiWindow*>(layout->container)->popupSize.h;
-    cmdlist->points(id + 3).y = static_cast<uiWindow*>(layout->container)->popupSize.h;
-    //*/
-    // static_cast<uiWindow*>(layout->container)->popupSize.w = layout->container->bounds.w;
-    // static_cast<uiWindow*>(layout->container)->popupSize.h = layout->container->bounds.h;
+    // 菜单条暂时不支持滚动条了，滚动条扰动会使菜单窗口闪烁
 
     // 弹出布局
     pop_layout();

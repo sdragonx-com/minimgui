@@ -497,28 +497,24 @@ public:
     }
 
     // 绘制矩形
-    size_t draw_rect(float x, float y, float w, float h)
+    void draw_rect(float x, float y, float w, float h)
     {
         add_cmd(RECT, 2);
-        size_t pos = m_points.size();
         m_points.push_back(uiVec2(x, y));
         m_points.push_back(uiVec2(w, h));
-        return pos;
     }
 
-    size_t draw_rect(const uiRect& rect) { this->draw_rect(rect.x, rect.y, rect.w, rect.h); }
+    void draw_rect(const uiRect& rect) { this->draw_rect(rect.x, rect.y, rect.w, rect.h); }
 
     // 填充矩形
-    size_t fill_rect(float x, float y, float w, float h)
+    void fill_rect(float x, float y, float w, float h)
     {
         add_cmd(RECT | FILL_MODE, 2);
-        size_t pos = m_points.size();
         m_points.push_back(uiVec2(x, y));
         m_points.push_back(uiVec2(w, h));
-        return pos;
     }
 
-    size_t fill_rect(const uiRect& rect)
+    void fill_rect(const uiRect& rect)
     {
         this->fill_rect(rect.x, rect.y, rect.w, rect.h);
     }
@@ -532,7 +528,7 @@ public:
         m_points.push_back(uiVec2(rx, ry));
     }
 
-    size_t draw_round_rect(const uiRect& rect, float rx, float ry)
+    void draw_round_rect(const uiRect& rect, float rx, float ry)
     {
         this->draw_round_rect(rect.x, rect.y, rect.w, rect.h, rx, ry);
     }
@@ -546,7 +542,7 @@ public:
         m_points.push_back(uiVec2(rx, ry));
     }
 
-    size_t fill_round_rect(const uiRect& rect, float rx, float ry)
+    void fill_round_rect(const uiRect& rect, float rx, float ry)
     {
         this->fill_round_rect(rect.x, rect.y, rect.w, rect.h, rx, ry);
     }
@@ -559,7 +555,7 @@ public:
         m_points.push_back(uiVec2(w, h));
     }
 
-    size_t draw_ellipse(const uiRect& rect)
+    void draw_ellipse(const uiRect& rect)
     {
         this->draw_ellipse(rect.x, rect.y, rect.w, rect.h);
     }
@@ -572,7 +568,7 @@ public:
         m_points.push_back(uiVec2(w, h));
     }
 
-    size_t fill_ellipse(const uiRect& rect)
+    void fill_ellipse(const uiRect& rect)
     {
         this->fill_ellipse(rect.x, rect.y, rect.w, rect.h);
     }

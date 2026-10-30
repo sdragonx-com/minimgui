@@ -311,20 +311,18 @@ void draw_collapsible(uiCommandList* cmdlist, uiWidget* widget, bool isCollapsed
 }
 
 // 绘制菜单窗口
-size_t draw_menu_window(uiCommandList* cmdlist, uiWindow* window)
+void draw_menu_window(uiCommandList* cmdlist, uiWindow* window)
 {
     // 窗口矩形
     uiRect rect = window->bounds;
 
     // 背景
     cmdlist->set_fill(style()->widgetBackground[UI_COLOR_NORMAL]);
-    size_t pos = cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
+    cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
 
     // 边框
     cmdlist->set_stroke(style()->windowForeground[UI_COLOR_NORMAL]);
     cmdlist->draw_rect(rect.x, rect.y, rect.w, rect.h);
-
-    return pos;
 }
 
 // 绘制菜单项

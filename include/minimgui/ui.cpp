@@ -320,28 +320,22 @@ void render(void* instance)
     // 开始绘制
     on_begin_draw(instance);
 
-    // 绘制背景
-    // m_ui_context.cmdlist.clear();
-    // ui_draw_widget(&m_ui_context);
-
-    // 绘制所有窗口
-    if (!m_ui_context.backgroundCmdList.empty()) { // 背景
+    // 绘制背景命令列表
+    if (!m_ui_context.backgroundCmdList.empty()) {
         draw_cmd(m_ui_context.backgroundCmdList, instance);
     }
+
+    // 绘制所有窗口
     if (!m_ui_context.mainWindow.cmdlist.empty()) { // 桌面窗口
         draw_cmd(m_ui_context.mainWindow.cmdlist, instance);
     }
     for (size_t i = 0; i < m_ui_context.windows.size(); ++i) { // 窗口列表
         uiWindow* window = m_ui_context.windows[i];
-        /*
-        if (window->type == UI_WIDGET_MENU && window->data == 1) { // 菜单延迟一帧绘制
-            printf("%d\n", window->data);
-            continue;
-        }
-        */
         draw_cmd(window->cmdlist, instance);
     }
-    if (!m_ui_context.foregroundCmdList.empty()) { // 前景
+
+    // 绘制前景命令列表
+    if (!m_ui_context.foregroundCmdList.empty()) {
         draw_cmd(m_ui_context.foregroundCmdList, instance);
     }
 
@@ -369,14 +363,6 @@ void init_layout(uiLayout* layout, uiPanel* panel)
         }
         layout->space = (panel->panelFlags & UI_PANEL_SPACE) ? style()->itemSpace : uiVec2(0.0f);
     }
-    /*
-    else if (panel->type == UI_WIDGET_POPUP) { // 弹出窗口
-        layout->owner = static_cast<uiWindow*>(panel);
-
-        layout->padding = (panel->panelFlags & UI_PANEL_PADDING) ? style()->windowPadding : uiVec2(0.0f);
-        layout->space   = (panel->panelFlags & UI_PANEL_SPACE) ? style()->itemSpace : uiVec2(0.0f);
-    }
-    */
     else { // 子窗口
         layout->owner =
             m_ui_context.layouts.empty()
@@ -441,16 +427,6 @@ uiLayout* layout()
 // 返回当前窗口的绘图列表
 uiCommandList* window_cmdlist()
 {
-    /*
-    if (m_ui_context.popups.empty()) {
-        return &current_window()->cmdlist;
-    }
-    else {
-        // uiWindow* window = find_window_by_id(m_ui_context.popups.back());
-        // return &window->cmdlist;
-        return &m_ui_context.popupCmdlist;
-    }
-    */
     return &layout()->owner->cmdlist;
 }
 
@@ -473,9 +449,6 @@ void push_clip(float x, float y, float w, float h, bool intersect)
     if (!cmdlist) {
         return;
     }
-
-    // cmdlist->set_stroke(colors::red);
-    // cmdlist->draw_rect(x, y, w, h);
 
     cmdlist->push_clip(x, y, w, h, intersect);
 }
@@ -1046,7 +1019,6 @@ uiRect allocate_widget_rect(float width, float height, bool forceNewLine)
 
     // 如果是菜单窗口，扩大窗口大小
     if (layout->container->type == UI_WIDGET_MENU) {
-        // if (layout->container->type == UI_WIDGET_MENU && layout->container->data == 1) {
         float cx = std::max(layout->container->bounds.w - w, 0.0f);
         // layout->expand(cx, h);
         uiWindow* window = static_cast<uiWindow*>(layout->container);
