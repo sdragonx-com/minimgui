@@ -364,6 +364,9 @@ bool begin_menu_bar(const uiChar* text)
     // 初始化弹出参数
     ctx->menuStack.clear();
 
+    // 禁用所有菜单
+    reset_menu_enable();
+
     return true;
 }
 

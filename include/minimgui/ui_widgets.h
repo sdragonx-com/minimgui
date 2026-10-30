@@ -89,15 +89,15 @@ struct uiWindow : public uiPanel
     uiCommandList cmdlist; // 绘图列表
     uiWidgetList widgets;  // 部件列表，用于需要缓存属性的部件
 
-    union
-    {
+
+    // clang-format off
+    union {
         uint64_t param;
         bool* pIsOpen;
-        struct
-        {
-            float w, h;
-        } popupSize; // 最后一次统计的弹出窗口大小
+        struct { float w, h; } backupSize;  // 折叠后保存的窗口大小
+        struct { float w, h; } popupSize;   // 最后一次统计的弹出窗口大小
     };
+    // clang-format off
 
     // 默认构造函数
     uiWindow(uiFlags panelFlags = UI_WINDOW_DEFAULT) :
@@ -280,11 +280,14 @@ uiRect allocate_widget_rect_full_line(float height);
 uiRect allocate_slot_area(float size, uiFlags position);
 
 // 调整矩形弹出坐标
-uiVec2 adjust_popup_position(const uiRect& widgetRect, const uiVec2& size, uiDirection dir);
+// uiVec2 adjust_popup_position(const uiRect& widgetRect, const uiVec2& size, uiDirection dir);
 
 // 调整菜单弹出坐标
 uiVec2 adjust_main_menu_popup_position(const uiRect& widgetRect, const uiVec2& size);
 uiVec2 adjust_sub_menu_popup_position(const uiRect& widgetRect, const uiVec2& size);
+
+// 重置所有菜单窗口禁用状态
+void reset_menu_enable();
 
 //
 // 部件

@@ -587,7 +587,18 @@ uiFlags check_window_mouse_event(uiWindow* window)
         if (hasTitle) {
             // 判断是否点击了折叠
             if (uiRect(rect.x, rect.y, titleHeight, titleHeight).contains(m_ui_context.mouse)) {
-                set_flags_enabled(window->panelFlags, UI_PANEL_COLLAPSE, !check_flags(window->panelFlags, UI_PANEL_COLLAPSE));
+                bool collapsed = !check_flags(window->panelFlags, UI_PANEL_COLLAPSE);
+                set_flags_enabled(window->panelFlags, UI_PANEL_COLLAPSE, collapsed);
+
+                if (collapsed) { // 折叠窗口大小
+                    window->backupSize.w = window->bounds.w;
+                    window->backupSize.h = window->bounds.h;
+                    window->bounds.h = m_ui_context.style.titleHeight;
+                }
+                else {
+                    window->bounds.w = window->backupSize.w;
+                    window->bounds.h = window->backupSize.h;
+                }
             }
 
             // 判断是否点击了关闭
@@ -1409,20 +1420,22 @@ void set_focus(uiWidget* widget)
 // 取消弹出窗口
 void cancel_popup()
 {
-    // 获取缓存的状态
-    // uiFlags& state = pick_cache_flags(0, UI_FLAGS_NONE);
-    // state          = 0;
     m_ui_context.openPath.clear();
+    reset_menu_enable();
 
+    m_ui_context.popupWidget = 0;
+}
+
+// 重置所有菜单窗口禁用状态
+void reset_menu_enable()
+{
     for (size_t i = 0; i < m_ui_context.windows.size(); ++i) {
         uiWindow* window = m_ui_context.windows[i];
         if (window->type == UI_WIDGET_MENU) {
             set_flags_enabled(window->flags, UI_FLAGS_DISABLED, true);
-            window->data = 0; // 重置菜单弹出计数
+            // window->data = 0; // 重置菜单弹出计数
         }
     }
-
-    m_ui_context.popupWidget = 0;
 }
 
 //------------------------------------------------------------------------------

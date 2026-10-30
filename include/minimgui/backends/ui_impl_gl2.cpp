@@ -115,6 +115,7 @@ void on_begin_draw(void* instance)
 
     // 开启 2D 纹理
     glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
     // 开启混合
     glEnable(GL_BLEND);
@@ -135,6 +136,7 @@ void on_begin_draw(void* instance)
 void on_end_draw(void* instance)
 {
     // 还原状态
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
     // 关闭剪裁
@@ -186,6 +188,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
     GLFWwindow* window = (GLFWwindow*) instance;
 
     uiColor pen;
+    // float penWidth = 1.0f; // todo...
     uiColor brush;
     uiRenderList renderer;
     std::vector<uiRect> clipStack;
@@ -300,7 +303,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
         {
             renderer.set_color(cmd.text.color);
             const uiString& str = cmdlist.strings(cmd.text.string);
-            uiVec2 pos           = cmdlist.points(cmd.text.index);
+            uiVec2 pos          = cmdlist.points(cmd.text.index);
             GLuint texID        = 0;
             for (size_t i = 0; i < str.length(); ++i) {
                 uiChar ch                         = str[i];
