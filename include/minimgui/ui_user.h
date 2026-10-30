@@ -24,6 +24,9 @@ bool key_state(int key);
 // 绘图 API 需要实现的接口
 //
 
+// 初始化界面
+void on_init_gui(void* instance);
+
 // 初始化界面环境
 void on_begin_context(void* instance);
 

@@ -167,16 +167,17 @@ void draw_title(
 // 绘制窗口
 void draw_window(uiCommandList* cmdlist, uiWindow* window)
 {
-    // const float titleHeight = context()->style.titleHeight;                       // 标题栏高度
-    const float titleHeight = ((window->panelFlags & UI_PANEL_TITLE) ? style()->titleHeight : 0.0f);
-    const bool hasTitle     = check_flags(window->panelFlags, UI_PANEL_TITLE);    // 是否拥有标题
+    const bool hasTitle     = check_flags(window->panelFlags, UI_PANEL_TITLE);    // 是否拥有标题栏
+    const bool hasMenu      = check_flags(window->panelFlags, UI_PANEL_MENU);     // 是否拥有菜单栏
     const bool isActived    = is_actived(window);                                 // 是否激活
     const bool isCollapsed  = check_flags(window->panelFlags, UI_PANEL_COLLAPSE); // 是否折叠
+    const float titleHeight = hasTitle ? style()->titleHeight : 0.0f;             // 标题栏高度
+    const float menuHeight  = hasMenu ? style()->menuHeight : 0.0f;               // 菜单栏高度
 
     // 窗口矩形
     uiRect rect = window->bounds;
 
-    bool show = true;
+    bool isShow = true;
 
     // 如果有标题栏
     if (hasTitle) {
@@ -194,26 +195,32 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window)
             select_color(style()->titleForeground, false, isActived)
         );
 
+        const float iconSize = titleHeight * 0.6f;
+        const float iconPos  = (titleHeight - iconSize) * 0.5f;
+
         // 折叠标记
-        draw_updown_arrow(cmdlist, rect.x, rect.y, titleHeight, titleHeight, 0.8f, isCollapsed);
+        cmdlist->set_fill(style()->foreground[UI_COLOR_NORMAL]);
+        draw_collapse_icon(cmdlist, rect.x + iconPos, rect.y + iconPos, iconSize, 2.0f, isCollapsed);
 
         // 关闭
         if (window->pIsOpen) {
-            draw_close_icon(cmdlist, rect.x + rect.w - titleHeight, rect.y, titleHeight, titleHeight);
+            draw_close_icon(cmdlist, rect.x + rect.w - titleHeight + iconPos, rect.y + iconPos, iconSize, 2.0f);
         }
 
         if (isCollapsed) {
             rect.h = titleHeight;
-            show   = false;
+            isShow = false;
         }
         else if (window->bounds.h <= titleHeight) {
-            show = false;
+            isShow = false;
         }
     }
 
     // 如果没有折叠
     // if (!isCollapsed && (hasTitle && window->bounds.h > titleHeight)) {
-    if (show) {
+
+    // 显示客户区
+    if (isShow) {
         // 背景
         cmdlist->set_fill(style()->windowBackground);
         cmdlist->fill_rect(rect.x, rect.y + titleHeight, rect.w, rect.h - titleHeight);
@@ -221,25 +228,29 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window)
         // 三角形绘制大小略比鼠标判定大小小一些
         const float TRIANGLE_SIZE = style()->triangleSize * 0.75f;
 
+        if (window->text == _T("design")) {
+            // printf("design\n");
+        }
+
         // 垂直滚动条
         if (window->scrollMax.y > 0.0f) {
             // const float titleHeight = ((window->panelFlags & UI_PANEL_TITLE) ? style()->titleHeight : 0.0f);
             const float scrollWidth = style()->scrollWidth;
-            const float height =
-                window->bounds.h - titleHeight -
+            const float scrollHeight =
+                window->bounds.h - titleHeight - menuHeight -
                 (check_flags(window->panelFlags, UI_PANEL_RESIZABLE) ? TRIANGLE_SIZE - scrollWidth : 0.0f); // 三角大小
 
             // 如果小于滑块最小大小，则不显示
-            if (height > style()->scrollSliderMin) {
+            if (scrollHeight > style()->scrollSliderMin) {
                 uiRect rect = uiRect(
                     window->bounds.x + window->bounds.w - style()->scrollWidth,
-                    window->bounds.y + titleHeight,
+                    window->bounds.y + titleHeight + menuHeight,
                     style()->scrollWidth, // 宽度
-                    height
+                    scrollHeight
                 );
 
                 const float padding   = check_flags(window->panelFlags, UI_PANEL_PADDING) ? style()->windowPadding.y * 2.0f : 0.0f;
-                const float scrollMax = window->scrollMax.y - height + padding;
+                const float scrollMax = window->scrollMax.y - scrollHeight + padding;
 
                 // 滚轴滚动
                 if (is_hovered(window) && context()->hoveredWidget == 0) {
@@ -253,7 +264,7 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window)
             }
         }
 
-        // 缩放三角形
+        // 右下角缩放三角形
         if (check_flags(window->panelFlags, UI_PANEL_RESIZABLE)) {
             const uiVec2 triangle[] = {
                 uiVec2(rect.x + rect.w, rect.y + rect.h - TRIANGLE_SIZE),
@@ -281,6 +292,7 @@ void draw_collapsible(uiCommandList* cmdlist, uiWidget* widget, bool isCollapsed
     cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
 
     // 折叠标记
+    cmdlist->set_stroke(style()->foreground[UI_COLOR_NORMAL]);
     draw_updown_arrow(cmdlist, rect.x, rect.y, rect.h, rect.h, 0.5f, isCollapsed);
 
     // 标题
@@ -342,11 +354,11 @@ void draw_menu_item(uiCommandList* cmdlist, uiWidget* widget, bool hovered, bool
         float ay = rect.y + rect.h * 0.5f;
         // 小三角
         uiVec2 points[] = {
-            uiVec2(ax, ay - 4),
-            uiVec2(ax + 6, ay),
-            uiVec2(ax, ay + 4)
+            uiVec2(ax, ay - 4.0f),
+            uiVec2(ax, ay + 4.0f),
+            uiVec2(ax + 6.0f, ay)
         };
-        cmdlist->set_fill(colors::black);
+        cmdlist->set_fill(style()->foreground[UI_COLOR_NORMAL]);
         cmdlist->fill_triangle(points);
     }
 }

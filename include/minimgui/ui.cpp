@@ -13,7 +13,7 @@ namespace minimgui {
 uiContext m_ui_context;
 
 static int _m_push_count = 0;
-static int _m_pop_count = 0;
+static int _m_pop_count  = 0;
 
 //------------------------------------------------------------------------------
 // 框架
@@ -44,7 +44,7 @@ void init_gui()
 
     m_ui_context.hoveredWidget = 0;
     m_ui_context.clickedWidget = 0;
-    m_ui_context.popupWidget = 0;
+    m_ui_context.popupWidget   = 0;
 
     // 动态设置标题栏高度
     // m_ui_context.style.titleHeight = char_height("A") + m_ui_context.style.framePadding.y * 2.0f;
@@ -66,12 +66,23 @@ void shutdown()
 // 消息处理
 //------------------------------------------------------------------------------
 
+// 窗口大小改变
+int on_resize(int width, int height)
+{
+    m_ui_context.screen              = uiVec2(width, height);
+    m_ui_context.mainWindow.bounds.w = static_cast<float>(width);
+    m_ui_context.mainWindow.bounds.h = static_cast<float>(height);
+    return 0;
+}
+
+// 按键按下
 int on_key_push(int key)
 {
     m_ui_context.key = key;
     return 0;
 }
 
+// 按键弹起
 int on_key_pop(int key)
 {
     (void) key;
@@ -80,6 +91,7 @@ int on_key_pop(int key)
     return 0;
 }
 
+// 字符输入
 int on_input(int ch)
 {
     if (ch > 255 || isspace(ch) || isgraph(ch)) {
@@ -89,6 +101,7 @@ int on_input(int ch)
     return 0;
 }
 
+// 鼠标按下
 int on_mouse_push(int x, int y, uiButton button)
 {
     (void) x;
@@ -108,6 +121,7 @@ int on_mouse_push(int x, int y, uiButton button)
     return 0;
 }
 
+// 鼠标弹起
 int on_mouse_pop(int x, int y, uiButton button)
 {
     (void) x;
@@ -121,6 +135,7 @@ int on_mouse_pop(int x, int y, uiButton button)
     return 0;
 }
 
+// 鼠标移动
 int on_mouse_move(int x, int y, uiButton button)
 {
     m_ui_context.mouse = uiVec2(x, y);
@@ -148,6 +163,7 @@ int on_mouse_move(int x, int y, uiButton button)
     return 0;
 }
 
+// 滚轮滚动
 int on_scroll(int z)
 {
     // printf("scroll: %d\n", z);
@@ -315,7 +331,7 @@ void render(void* instance)
     if (!m_ui_context.mainWindow.cmdlist.empty()) { // 桌面窗口
         draw_cmd(m_ui_context.mainWindow.cmdlist, instance);
     }
-    for (size_t i = 0; i < m_ui_context.windows.size(); ++i) {     // 窗口列表
+    for (size_t i = 0; i < m_ui_context.windows.size(); ++i) { // 窗口列表
         uiWindow* window = m_ui_context.windows[i];
         /*
         if (window->type == UI_WIDGET_MENU && window->data == 1) { // 菜单延迟一帧绘制
@@ -423,7 +439,7 @@ uiLayout* layout()
 //------------------------------------------------------------------------------
 
 // 返回当前窗口的绘图列表
-uiCommandList* command_list()
+uiCommandList* window_cmdlist()
 {
     /*
     if (m_ui_context.popups.empty()) {
@@ -453,7 +469,7 @@ uiCommandList* foreground_cmdlist()
 // 压入剪裁区域
 void push_clip(float x, float y, float w, float h, bool intersect)
 {
-    uiCommandList* cmdlist = command_list();
+    uiCommandList* cmdlist = window_cmdlist();
     if (!cmdlist) {
         return;
     }
@@ -467,7 +483,7 @@ void push_clip(float x, float y, float w, float h, bool intersect)
 // 弹出剪裁区域
 void pop_clip()
 {
-    uiCommandList* cmdlist = command_list();
+    uiCommandList* cmdlist = window_cmdlist();
     if (!cmdlist) {
         return;
     }
@@ -509,6 +525,14 @@ void pop_clip(uiPanel* panel)
 
     pop_clip();
 
+    // 调试剪裁矩形
+    /*
+    if (is_actived(get_owner(panel))) {
+        command_list()->set_stroke(colors::magenta);
+        command_list()->draw_rect(m_ui_context.clipRect.shrink(2.0f, 2.0f));
+    }
+    */
+
     // 还原缓存的剪裁矩形
     if (m_ui_context.layouts.empty()) {
         m_ui_context.clipRect = uiRect(0, 0, m_ui_context.screen.x, m_ui_context.screen.y);
@@ -516,6 +540,18 @@ void pop_clip(uiPanel* panel)
     else {
         m_ui_context.clipRect = compute_clip_rect(m_ui_context.layouts.back().container);
     }
+}
+
+// 判断矩形是否在剪裁矩形内
+bool is_visible_clipbox(const uiRect& rect)
+{
+    return m_ui_context.clipRect.collision(rect);
+}
+
+// 判断控件是否在剪裁矩形内
+bool is_visible_clipbox(uiWidget* widget)
+{
+    return is_visible_clipbox(widget->bounds);
 }
 
 //------------------------------------------------------------------------------
@@ -538,15 +574,15 @@ uiFlags check_window_mouse_event(uiWindow* window)
     /*
     // 绘制鼠标位置窗口矩形
     if (check_hover(window)) {
-        uiCommandList* cmdlist = command_list();
+        uiCommandList* cmdlist = foreground_cmdlist();
         if (cmdlist) {
             // cmdlist->set_stroke(colors::magenta, 4.0f);
-            // cmdlist->draw_rect(m_ui_context.clipRect.x, m_ui_context.clipRect.y, m_ui_context.clipRect.w, m_ui_context.clipRect.h);
-            cmdlist->set_stroke(colors::blue, 2.0f);
-            cmdlist->draw_rect(window->bounds.x, window->bounds.y, window->bounds.w, window->bounds.h);
+            // cmdlist->draw_rect(m_ui_context.clipRect);
+            cmdlist->set_stroke(colors::yellow, 2.0f);
+            cmdlist->draw_rect(window->bounds);
         }
     }
-    */
+    //*/
 
     // check mouse hovering
     // if (rect.contains(m_ui_context.mouse) == false) { return flags; }
@@ -644,19 +680,19 @@ uiFlags check_widget_mouse_event(uiWidget* widget, bool allowActive)
         return flags;
     }
 
-    /*
+    //*
     if (check_hover(widget)) {
-        uiCommandList* cmdlist = command_list();
+        uiCommandList* cmdlist = foreground_cmdlist();
         if (cmdlist) {
-            cmdlist->set_stroke(colors::magenta, 4.0f);
-            cmdlist->draw_rect(m_ui_context.clipRect.x, m_ui_context.clipRect.y, m_ui_context.clipRect.w, m_ui_context.clipRect.h);
-            cmdlist->set_stroke(colors::blue, 2.0f);
-            cmdlist->draw_rect(widget->bounds.x, widget->bounds.y, widget->bounds.w, widget->bounds.h);
-            cmdlist->set_text(colors::blue);
-            cmdlist->draw_string(widget->bounds.x, widget->bounds.y, widget->text);
+            cmdlist->set_stroke(colors::magenta, 1.0f); // 剪裁矩形
+            draw_check_rect(cmdlist, m_ui_context.clipRect.shrink(2.0f, 2.0f));
+            cmdlist->set_stroke(colors::blue, 1.0f);    // 部件矩形
+            cmdlist->draw_rect(widget->bounds.expand(2.0f, 2.0f));
+            // cmdlist->set_text(colors::blue);
+            // cmdlist->draw_string(widget->bounds.x, widget->bounds.y, widget->text);
         }
     }
-    */
+    //*/
 
     // 检查鼠标是否在当前剪裁区域 (error: 窗口的滚动条绘制的时候，剪裁区域还在上个窗口)
     // if (m_ui_context.clipRect.contains(m_ui_context.mouse) == false) { return flags; }
@@ -785,7 +821,10 @@ size_t find_window(uiWindow* window)
 // 判断窗口是否激活
 bool is_actived(uiWindow* window)
 {
-    return m_ui_context.activedWindow == window->id;
+    if (window) {
+        return m_ui_context.activedWindow == window->id;
+    }
+    return false;
 }
 
 // 设置激活窗口
@@ -871,8 +910,8 @@ uiRect compute_clip_rect(uiPanel* panel)
 
     // 如果有菜单栏
     if (panel->panelFlags & UI_PANEL_MENU) {
-        // rect.y += style.titleHeight;
-        // rect.h -= style.titleHeight;
+        rect.y += style.titleHeight;
+        rect.h -= style.titleHeight;
     }
 
     return rect;
@@ -1022,7 +1061,7 @@ uiRect allocate_widget_rect(float width, float height, bool forceNewLine)
 
     // 如果是菜单窗口，扩大窗口大小
     if (layout->container->type == UI_WIDGET_MENU) {
-    // if (layout->container->type == UI_WIDGET_MENU && layout->container->data == 1) {
+        // if (layout->container->type == UI_WIDGET_MENU && layout->container->data == 1) {
         float cx = std::max(layout->container->bounds.w - w, 0.0f);
         // layout->expand(cx, h);
         uiWindow* window = static_cast<uiWindow*>(layout->container);
@@ -1326,6 +1365,26 @@ bool is_pressed(uiWidget* widget)
     return m_ui_context.clickedWidget == widget->id;
 }
 
+// 设置鼠标点击部件
+void set_clicked_widget(uiWidget* widget)
+{
+    m_ui_context.clickedWidget = widget->id;
+
+    bool isMenuItem = false;
+
+    wprintf(_T("click [%12ls: %12ls]"), widget->text.c_str(), widget_type_to_string(widget->type));
+    if (widget->parent) {
+        wprintf(_T("  parent: [%12ls: %12ls]"), widget->parent->text.c_str(), widget_type_to_string(widget->parent->type));
+        isMenuItem = widget->parent->type == UI_WIDGET_MENU;
+    }
+    wprintf(_T("\n"));
+
+    // 取消弹出部件
+    if (isMenuItem == false && m_ui_context.popupWidget != widget->id) {
+        cancel_popup();
+    }
+}
+
 // 判断部件是否鼠标捕获
 bool is_capture(uiWidget* widget)
 {
@@ -1407,26 +1466,6 @@ void cancel_popup()
     }
 
     m_ui_context.popupWidget = 0;
-}
-
-// 设置鼠标点击部件
-void set_clicked_widget(uiWidget* widget)
-{
-    m_ui_context.clickedWidget = widget->id;
-
-    bool isMenuItem = false;
-
-    wprintf(_T("click [%12ls: %12ls]"), widget->text.c_str(), widget_type_to_string(widget->type));
-    if (widget->parent) {
-        wprintf(_T("  parent: [%12ls: %12ls]"), widget->parent->text.c_str(), widget_type_to_string(widget->parent->type));
-        isMenuItem = widget->parent->type == UI_WIDGET_MENU;
-    }
-    wprintf(_T("\n"));
-
-    // 取消弹出部件
-    if (isMenuItem == false && m_ui_context.popupWidget != widget->id) {
-        cancel_popup();
-    }
 }
 
 //------------------------------------------------------------------------------

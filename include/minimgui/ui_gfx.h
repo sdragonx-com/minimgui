@@ -20,7 +20,6 @@ namespace minimgui {
 class uiCommandList
 {
 public:
-    typedef uiVec2 point_type;
     typedef void* handle_type;
 
     enum COMMAND
@@ -218,7 +217,7 @@ private:
     glm::mat3x2 m_transform;
 
     std::vector<command> m_commands;   // 命令列表
-    std::vector<point_type> m_points;  // 顶点列表
+    std::vector<uiVec2> m_points;      // 顶点列表
     std::vector<uiString> m_strings;   // 字符串列表
     std::vector<handle_type> m_images; // 图片列表
 
@@ -463,23 +462,38 @@ public:
     // 移动画笔
     void move_to(float x, float y)
     {
+        this->move_to(uiVec2(x, y));
+    }
+
+    void move_to(uiVec2 v)
+    {
         add_cmd(MOVETO, 1);
-        m_points.push_back(point_type(x, y));
+        m_points.push_back(v);
     }
 
     // 绘制直线到顶点
     void line_to(float x, float y)
     {
+        this->line_to(uiVec2(x, y));
+    }
+
+    void line_to(uiVec2 v)
+    {
         add_cmd(LINETO, 1);
-        m_points.push_back(point_type(x, y));
+        m_points.push_back(v);
     }
 
     // 添加直线
     void draw_line(float x1, float y1, float x2, float y2)
     {
+        this->draw_line(uiVec2(x1, y1), uiVec2(x2, y2));
+    }
+
+    void draw_line(uiVec2 v1, uiVec2 v2)
+    {
         add_cmd(LINE, 2);
-        m_points.push_back(point_type(x1, y1));
-        m_points.push_back(point_type(x2, y2));
+        m_points.push_back(v1);
+        m_points.push_back(v2);
     }
 
     // 绘制矩形
@@ -487,62 +501,94 @@ public:
     {
         add_cmd(RECT, 2);
         size_t pos = m_points.size();
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
         return pos;
     }
+
+    size_t draw_rect(const uiRect& rect) { this->draw_rect(rect.x, rect.y, rect.w, rect.h); }
 
     // 填充矩形
     size_t fill_rect(float x, float y, float w, float h)
     {
         add_cmd(RECT | FILL_MODE, 2);
         size_t pos = m_points.size();
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
         return pos;
+    }
+
+    size_t fill_rect(const uiRect& rect)
+    {
+        this->fill_rect(rect.x, rect.y, rect.w, rect.h);
     }
 
     // 绘制圆角矩形
     void draw_round_rect(float x, float y, float w, float h, float rx, float ry)
     {
         add_cmd(ROUND_RECT, 3);
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
-        m_points.push_back(point_type(rx, ry));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
+        m_points.push_back(uiVec2(rx, ry));
+    }
+
+    size_t draw_round_rect(const uiRect& rect, float rx, float ry)
+    {
+        this->draw_round_rect(rect.x, rect.y, rect.w, rect.h, rx, ry);
     }
 
     // 填充圆角矩形
     void fill_round_rect(float x, float y, float w, float h, float rx, float ry)
     {
         add_cmd(ROUND_RECT | FILL_MODE, 3);
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
-        m_points.push_back(point_type(rx, ry));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
+        m_points.push_back(uiVec2(rx, ry));
+    }
+
+    size_t fill_round_rect(const uiRect& rect, float rx, float ry)
+    {
+        this->fill_round_rect(rect.x, rect.y, rect.w, rect.h, rx, ry);
     }
 
     // 绘制椭圆
     void draw_ellipse(float x, float y, float w, float h)
     {
         add_cmd(ELLIPSE, 2);
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
+    }
+
+    size_t draw_ellipse(const uiRect& rect)
+    {
+        this->draw_ellipse(rect.x, rect.y, rect.w, rect.h);
     }
 
     // 填充椭圆
     void fill_ellipse(float x, float y, float w, float h)
     {
         add_cmd(ELLIPSE | FILL_MODE, 2);
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
+    }
+
+    size_t fill_ellipse(const uiRect& rect)
+    {
+        this->fill_ellipse(rect.x, rect.y, rect.w, rect.h);
     }
 
     // 绘制三角形
     void draw_triangle(float x1, float y1, float x2, float y2, float x3, float y3)
     {
+        this->draw_triangle(uiVec2(x1, y1), uiVec2(x2, y2), uiVec2(x3, y3));
+    }
+
+    void draw_triangle(uiVec2 v1, uiVec2 v2, uiVec2 v3)
+    {
         add_cmd(TRIANGLE, 3);
-        m_points.push_back(uiVec2(x1, y1));
-        m_points.push_back(uiVec2(x2, y2));
-        m_points.push_back(uiVec2(x3, y3));
+        m_points.push_back(v1);
+        m_points.push_back(v2);
+        m_points.push_back(v3);
     }
 
     void draw_triangle(const uiVec2* points)
@@ -556,10 +602,15 @@ public:
     // 填充三角形
     void fill_triangle(float x1, float y1, float x2, float y2, float x3, float y3)
     {
+        this->fill_triangle(uiVec2(x1, y1), uiVec2(x2, y2), uiVec2(x3, y3));
+    }
+
+    void fill_triangle(uiVec2 v1, uiVec2 v2, uiVec2 v3)
+    {
         add_cmd(TRIANGLE | FILL_MODE, 3);
-        m_points.push_back(uiVec2(x1, y1));
-        m_points.push_back(uiVec2(x2, y2));
-        m_points.push_back(uiVec2(x3, y3));
+        m_points.push_back(v1);
+        m_points.push_back(v2);
+        m_points.push_back(v3);
     }
 
     void fill_triangle(const uiVec2* points)
@@ -571,43 +622,39 @@ public:
     }
 
     // 绘制折线
-    void draw_polyline(const point_type* points, size_t size)
+    void draw_polyline(const uiVec2* points, size_t size)
     {
         add_cmd(POLYLINE, size);
         m_points.insert(m_points.end(), points, points + size);
     }
 
     // 绘制多边形
-    void draw_polygon(const point_type* points, size_t size)
+    void draw_polygon(const uiVec2* points, size_t size)
     {
         add_cmd(POLYGON, size);
         m_points.insert(m_points.end(), points, points + size);
     }
 
     // 填充多边形
-    void fill_polygon(const point_type* points, size_t size)
+    void fill_polygon(const uiVec2* points, size_t size)
     {
         add_cmd(POLYGON | FILL_MODE, size);
         m_points.insert(m_points.end(), points, points + size);
     }
 
     // 绘制三次贝塞尔曲线
-    void draw_bezier(const point_type& v1, const point_type& v2, const point_type& v3, const point_type& v4)
+    void draw_bezier(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+    {
+        this->draw_bezier(uiVec2(x1, y1), uiVec2(x2, y2), uiVec2(x3, y3), uiVec2(x4, y4));
+    }
+
+    void draw_bezier(const uiVec2& v1, const uiVec2& v2, const uiVec2& v3, const uiVec2& v4)
     {
         add_cmd(BEZIER, 4);
         m_points.push_back(v1);
         m_points.push_back(v2);
         m_points.push_back(v3);
         m_points.push_back(v4);
-    }
-
-    void draw_bezier(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
-    {
-        add_cmd(BEZIER, 4);
-        m_points.push_back(point_type(x1, y1));
-        m_points.push_back(point_type(x2, y2));
-        m_points.push_back(point_type(x3, y3));
-        m_points.push_back(point_type(x4, y4));
     }
 
     // 设置字体
@@ -641,7 +688,17 @@ public:
     }
 
     // 绘制字符串
+    void draw_string(float x, float y, const uiChar* str, size_t size)
+    {
+        this->draw_string(x, y, uiString(str, size));
+    }
+
     void draw_string(float x, float y, const uiString& str)
+    {
+        this->draw_string(uiVec2(x, y), str);
+    }
+
+    void draw_string(uiVec2 pos, const uiString& str)
     {
         command cmd;
         cmd.inst        = STRING;
@@ -652,15 +709,15 @@ public:
         m_commands.push_back(cmd);
 
         m_strings.push_back(str);
-        m_points.push_back(point_type(x, y));
-    }
-
-    void draw_string(float x, float y, const uiChar* str, size_t size)
-    {
-        this->draw_string(x, y, uiString(str, size));
+        m_points.push_back(pos);
     }
 
     // 绘制矩形内格式化的字符串
+    void draw_string(float x, float y, float w, float h, const uiChar* str, size_t size, uint32_t style)
+    {
+        this->draw_string(x, y, w, h, uiString(str, size), style);
+    }
+
     void draw_string(float x, float y, float w, float h, const uiString& str, uint32_t style)
     {
         command cmd;
@@ -672,8 +729,13 @@ public:
         m_commands.push_back(cmd);
 
         m_strings.push_back(str);
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
+    }
+
+    void draw_string(const uiRect& rect, const uiString& str, uint32_t style)
+    {
+        this->draw_string(rect.x, rect.y, rect.w, rect.h, str, style);
     }
 
     // 绘制图片
@@ -689,8 +751,8 @@ public:
 
         m_images.push_back(image);
 
-        m_points.push_back(point_type(x, y));
-        m_points.push_back(point_type(w, h));
+        m_points.push_back(uiVec2(x, y));
+        m_points.push_back(uiVec2(w, h));
     }
 
 private:
@@ -1018,14 +1080,24 @@ private:
 // 扩展绘制
 //
 
+// 绘制检查矩形
+void draw_check_rect(uiCommandList* cmdlist, float x, float y, float w, float h);
+void draw_check_rect(uiCommandList* cmdlist, const uiRect& rect);
+
 // 上下箭头
 void draw_updown_arrow(uiCommandList* cmdlist, float x, float y, float w, float h, float scale, bool isUp);
+
+// 绘制折叠图标
+void draw_collapse_icon(uiCommandList* cmdlist, float x, float y, float size, float thickness, bool collapsed);
+
+// 绘制关闭图标
+void draw_close_icon(uiCommandList* cmdlist, float x, float y, float size, float thickness);
 
 // 填充三角形箭头
 void fill_triangle_arrow(uiCommandList* cmdlist, float x, float y, float w, float h, uiDirection dir);
 
-// 绘制关闭图标
-void draw_close_icon(uiCommandList* cmdlist, float x, float y, float w, float h);
+// 绘制对勾
+void draw_checkmark(uiCommandList* cmdlist, float x, float y, float size, float thickness);
 
 } // namespace minimgui
 

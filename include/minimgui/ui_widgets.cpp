@@ -82,16 +82,18 @@ bool begin_window(const uiChar* text, bool* isOpen, uiVec2 pos, uiVec2 size, uiF
         context()->windows.push_back(window);
     }
 
-    // 绘制窗口
-    draw_window(&window->cmdlist, window);
-
     // 窗口折叠，客户区不再绘制，返回
     if (check_flags(window->panelFlags, UI_PANEL_COLLAPSE)) {
+        // 绘制窗口
+        draw_window(&window->cmdlist, window);
         return false;
     }
 
     // 压入布局
     push_layout(window);
+
+     // 绘制窗口
+    draw_window(&window->cmdlist, window);
 
     // 剪裁客户区矩形
     push_clip(window, false);
@@ -109,6 +111,10 @@ void end_window()
 {
     // 获取当前布局容器
     uiPanel* panel = layout()->container;
+
+    if (panel->text == _T("design")) {
+        // printf("design\n");
+    }
 
     // 设置滚动范围
     if (check_flags(panel->panelFlags, UI_PANEL_SCROLL)) {
@@ -132,11 +138,11 @@ void end_window()
         }
     }
 
-    // 弹出剪裁矩形
-    pop_clip(panel);
-
     // 弹出布局
     pop_layout();
+
+    // 弹出剪裁矩形
+    pop_clip(panel);
 }
 
 //------------------------------------------------------------------------------
@@ -211,7 +217,7 @@ bool begin_child(const uiChar* text, uiFlags panelFlags)
     push_layout(panel);
 
     // 绘制窗口
-    draw_frame(command_list(), panel, style()->widgetForeground[UI_COLOR_NORMAL], style()->background[UI_COLOR_NORMAL]);
+    draw_frame(window_cmdlist(), panel, style()->widgetForeground[UI_COLOR_NORMAL], style()->background[UI_COLOR_NORMAL]);
 
     // 垂直滚动条
     if (panel->scrollMax.y > 0.0f) {
@@ -277,7 +283,7 @@ bool begin_menu_window(const uiChar* text, uiID id, uiVec2 pos, uiVec2 size, uiF
     uiLayout* layout = push_layout(window);
 
     // 绘制窗口
-    layout->data = draw_menu_window(command_list(), window);
+    layout->data = draw_menu_window(window_cmdlist(), window);
 
     // 剪裁客户区矩形
     push_clip(nullptr, false);
@@ -370,14 +376,11 @@ void end_menu_window()
         }
     }
 
-    // 弹出剪裁矩形
-    pop_clip(panel);
-
     // 修正菜单窗口弹出坐标、顶点大小
     // 这里无法解决菜单弹出问题
     /*
     size_t id              = layout->data;
-    uiCommandList* cmdlist = command_list();
+    uiCommandList* cmdlist = window_cmdlist();
 
     cmdlist->points(id + 1).y = static_cast<uiWindow*>(layout->container)->popupSize.h;
     cmdlist->points(id + 3).y = static_cast<uiWindow*>(layout->container)->popupSize.h;
@@ -387,6 +390,9 @@ void end_menu_window()
 
     // 弹出布局
     pop_layout();
+
+    // 弹出剪裁矩形
+    pop_clip(panel);
 }
 
 // 开始菜单栏
@@ -417,11 +423,14 @@ bool begin_menu_bar(const uiChar* text)
     // printf("events: %u\n", eventFlags);
     // printf("menubar\n");
 
+    // 弹出剪裁矩形
+    pop_clip(parent);
+
     // 压入布局
     push_layout(panel);
 
     // 绘制窗口
-    draw_frame(command_list(), panel, uiColor(), style()->widgetBackground[UI_COLOR_NORMAL]);
+    draw_frame(window_cmdlist(), panel, uiColor(), style()->widgetBackground[UI_COLOR_NORMAL]);
 
     // 剪裁客户区矩形
     push_clip(panel, true);
@@ -436,6 +445,10 @@ bool begin_menu_bar(const uiChar* text)
 void end_menu_bar()
 {
     end_child();
+
+    // 重新压入父窗口剪裁矩形
+    uiPanel* parent = layout()->container;
+    push_clip(parent, true);
 }
 
 // 菜单栏主菜单项
@@ -443,7 +456,7 @@ static bool begin_main_menu(const uiChar* text)
 {
     uiContext* ctx = context();
 
-    uiString title = text; // layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? _T(".") : _T(".menu.")) + text;
+    uiString title = layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? _T(".") : _T(".menu.")) + text;
     uiID id        = ui_hash(title) ^ MENU_HASH_MAGIC;
 
     // 计算布局大小
@@ -475,7 +488,7 @@ static bool begin_main_menu(const uiChar* text)
 
     // 绘制
     draw_label(
-        command_list(), &widget, UI_CENTER,
+        window_cmdlist(), &widget, UI_CENTER,
         select_text_foreground(hovered, false), uiColor(), select_color(style()->widgetBackground, hovered, false)
     );
 
@@ -515,7 +528,7 @@ static bool begin_sub_menu(const uiChar* text)
 {
     uiContext* ctx = context();
 
-    uiString title = text; // layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? _T(".") : _T(".menu.")) + text;
+    uiString title = layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? _T(".") : _T(".menu.")) + text;
     const uiID id  = ui_hash(title) ^ MENU_HASH_MAGIC;
 
     // 计算布局大小
@@ -537,7 +550,7 @@ static bool begin_sub_menu(const uiChar* text)
     }
 
     // 绘制
-    draw_menu_item(command_list(), &widget, hovered, false, true);
+    draw_menu_item(window_cmdlist(), &widget, hovered, false, true);
 
     // 判断打开路径里面是否有菜单 ID
     bool isOpen = false;
@@ -634,7 +647,7 @@ bool menu_item(const uiChar* text)
     }
 
     // 绘制
-    draw_menu_item(command_list(), &widget, hovered, false, false);
+    draw_menu_item(window_cmdlist(), &widget, hovered, false, false);
 
     return clicked;
 }
@@ -652,6 +665,11 @@ bool collapsible_panel(const uiChar* text, uiFlags panelFlags)
     // 获取缓存的状态
     uiFlags& state = pick_cache_flags(widget.id, check_flags(panelFlags, UI_FLAGS_OPEN) ? UI_FLAGS_OPEN : 0);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return check_flags(state, UI_FLAGS_OPEN);
+    }
+
     // 事件处理
     uiFlags eventFlags = check_widget_mouse_event(&widget);
     bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
@@ -664,7 +682,7 @@ bool collapsible_panel(const uiChar* text, uiFlags panelFlags)
 
     // 绘制
     bool expanded = check_flags(state, UI_FLAGS_OPEN);
-    draw_collapsible(command_list(), &widget, !expanded);
+    draw_collapsible(window_cmdlist(), &widget, !expanded);
 
     return expanded;
 }
@@ -684,7 +702,9 @@ static void label_widget(const uiChar* text, float width = -10.0f)
     float cy      = char_height() + style()->framePadding.y * 2.0f;
     widget.bounds = allocate_widget_rect(cx, cy);
 
-    draw_label(command_list(), &widget, UI_LEFT, style()->foreground[UI_COLOR_NORMAL], uiColor(), uiColor());
+    if (is_visible_clipbox(&widget)) {
+        draw_label(window_cmdlist(), &widget, UI_LEFT, style()->foreground[UI_COLOR_NORMAL], uiColor(), uiColor());
+    }
 }
 
 // 标签页
@@ -725,9 +745,14 @@ bool button(const uiChar* text, uiVec2 size)
     float cy      = is_zero(size.y) ? char_height() + style()->framePadding.y * 2.0f : size.y;
     widget.bounds = allocate_widget_rect(cx, cy);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
     uiFlags eventFlags = check_widget_mouse_event(&widget);
 
-    draw_button(command_list(), &widget);
+    draw_button(window_cmdlist(), &widget);
 
     return check_flags(eventFlags, UI_FLAGS_CLICKED);
 }
@@ -740,7 +765,9 @@ void color_box(uiColor color, float width)
     float cy      = char_height();
     widget.bounds = allocate_widget_rect(width, cy);
 
-    draw_frame(command_list(), widget.bounds, select_color(style()->widgetForeground, false, false), color);
+    if (is_visible_clipbox(&widget)) {
+        draw_frame(window_cmdlist(), widget.bounds, select_color(style()->widgetForeground, false, false), color);
+    }
 }
 
 // 单选框，ID 生成使用变量地址
@@ -752,6 +779,11 @@ bool checkbox(const uiChar* text, bool* checked)
     float cy      = char_height() + style()->framePadding.y * 2.0f;
     widget.bounds = allocate_widget_rect(cy + 4.0f + cx, cy);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
     // 事件处理
     uiFlags eventFlags = check_widget_mouse_event(&widget);
     bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
@@ -761,7 +793,7 @@ bool checkbox(const uiChar* text, bool* checked)
     }
 
     // 绘制
-    draw_check_box(command_list(), &widget, *checked);
+    draw_check_box(window_cmdlist(), &widget, *checked);
 
     return clicked;
 }
@@ -775,6 +807,11 @@ bool selectable(const uiChar* text, bool selected, uiVec2 size)
     float cy      = is_zero(size.y) ? char_height() + style()->framePadding.y : size.y;
     widget.bounds = allocate_widget_rect(cx, cy);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
     // 事件处理
     uiFlags eventFlags = check_widget_mouse_event(&widget);
     bool hovered       = check_flags(eventFlags, UI_FLAGS_HOVERED);
@@ -782,7 +819,7 @@ bool selectable(const uiChar* text, bool selected, uiVec2 size)
     // 绘制
     uiColor textcolor  = select_text_foreground(hovered, selected);
     uiColor background = select_text_background(hovered, selected);
-    draw_label(command_list(), &widget, UI_LEFT, textcolor, uiColor(), background);
+    draw_label(window_cmdlist(), &widget, UI_LEFT, textcolor, uiColor(), background);
 
     return check_flags(eventFlags, UI_FLAGS_CLICKED);
 }
@@ -795,7 +832,11 @@ void separator(const uiString& text)
     // 分隔符高度
     const float cy    = text.empty() ? char_height() * 0.5f : char_height();
     const uiRect rect = allocate_widget_rect(-1.0f, cy);
-    draw_separator(command_list(), rect, text);
+
+    // 绘制
+    if (is_visible_clipbox(rect)) {
+        draw_separator(window_cmdlist(), rect, text);
+    }
 }
 //------------------------------------------------------------------------------
 
@@ -807,6 +848,12 @@ bool slider(const uiChar* text, float* value, float min, float max)
     float cy      = char_height() + style()->framePadding.y * 2.0f;
     widget.bounds = allocate_widget_rect(-1.0f, cy);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
+    // 事件处理
     check_widget_mouse_event(&widget);
     bool changed = false;
 
@@ -819,7 +866,8 @@ bool slider(const uiChar* text, float* value, float min, float max)
         changed                 = true;
     }
 
-    draw_slider(command_list(), &widget, *value, min, max);
+    // 绘制
+    draw_slider(window_cmdlist(), &widget, *value, min, max);
 
     return changed;
 }
@@ -849,8 +897,12 @@ static float compute_scroll_slider_size(
 bool hscroll(const uiChar* text, const uiRect& rect, float* value, float min, float max)
 {
     uiWidget widget(UI_WIDGET_SCROLL, text, 0, layout()->container);
-
     widget.bounds = rect;
+
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
 
     check_widget_mouse_event(&widget);
 
@@ -878,7 +930,8 @@ bool hscroll(const uiChar* text, const uiRect& rect, float* value, float min, fl
         changed = true;
     }
 
-    draw_hscroll(command_list(), &widget, *value, sliderPos, sliderSize);
+    // 绘制
+    draw_hscroll(window_cmdlist(), &widget, *value, sliderPos, sliderSize);
 
     return changed;
 }
@@ -887,10 +940,18 @@ bool hscroll(const uiChar* text, const uiRect& rect, float* value, float min, fl
 bool vscroll(const uiChar* text, const uiRect& rect, float* value, float min, float max)
 {
     uiWidget widget(UI_WIDGET_SCROLL, text, 0, layout()->container);
-
     widget.bounds = rect;
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        // return false;
+    }
+
     check_widget_mouse_event(&widget);
+
+    if (is_hovered(&widget)) {
+        wprintf(_T("container: %ls\n"), layout()->container->text.c_str());
+    }
 
     // 计算当前滑块位置
     const float sliderSize  = compute_scroll_slider_size(min, max, widget.bounds.h);
@@ -919,7 +980,9 @@ bool vscroll(const uiChar* text, const uiRect& rect, float* value, float min, fl
         // wprintf(L"err: %ls\n", layout()->container->text.c_str());
     }
 
-    draw_vscroll(command_list(), &widget, *value, sliderPos, sliderSize);
+    // 绘制
+    draw_vscroll(window_cmdlist(), &widget, *value, sliderPos, sliderSize);
+    // draw_vscroll(foreground_cmdlist(), &widget, *value, sliderPos, sliderSize);
 
     return changed;
 }
@@ -964,6 +1027,11 @@ bool begin_combo(const uiChar* text)
     float cy      = char_height() + style()->framePadding.y * 2.0f;
     widget.bounds = allocate_widget_rect(cx, cy);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
     // 事件处理
     uiFlags eventFlags = check_widget_mouse_event(&widget);
     bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
@@ -975,7 +1043,7 @@ bool begin_combo(const uiChar* text)
     }
 
     // 绘制
-    draw_combo(command_list(), &widget, opened);
+    draw_combo(window_cmdlist(), &widget, opened);
 
     // 打开列表
     // printf("combo: %u\n", state);
@@ -1014,25 +1082,30 @@ bool treenode(const uiChar* text, uiFlags nodeFlags)
     // 获取缓存的状态
     uiFlags& state = pick_cache_flags(widget.id, nodeFlags);
 
-    // 事件处理
-    uiFlags eventFlags = check_widget_mouse_event(&widget);
-    bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
-    bool hovered       = check_flags(eventFlags, UI_FLAGS_HOVERED);
+    // 判断是否在剪裁范围内
+    if (is_visible_clipbox(&widget)) {
+        // 事件处理
+        uiFlags eventFlags = check_widget_mouse_event(&widget);
+        bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
+        bool hovered       = check_flags(eventFlags, UI_FLAGS_HOVERED);
 
-    if (clicked) {
-        set_flags_enabled(state, UI_FLAGS_OPEN, !check_flags(state, UI_FLAGS_OPEN));
+        if (clicked) {
+            set_flags_enabled(state, UI_FLAGS_OPEN, !check_flags(state, UI_FLAGS_OPEN));
+        }
+
+        // 绘制
+        draw_treenode(window_cmdlist(), &widget, check_flags(state, UI_FLAGS_OPEN), select_text_foreground(hovered, false));
     }
-
-    // 绘制
-    draw_treenode(command_list(), &widget, check_flags(state, UI_FLAGS_OPEN), select_text_foreground(hovered, false));
 
     if (check_flags(state, UI_FLAGS_OPEN)) {
         indent(24.0f); // 增加缩进
         return true;
     }
+
     return false;
 }
 
+// 自定义颜色的树节点
 bool treenode(const uiChar* text, uiColor color, uiFlags nodeFlags)
 {
     uiWidget widget(UI_WIDGET_TREENODE, text, 0, layout()->container);
@@ -1044,17 +1117,20 @@ bool treenode(const uiChar* text, uiColor color, uiFlags nodeFlags)
     // 获取缓存的状态
     uiFlags& state = pick_cache_flags(widget.id, nodeFlags);
 
-    // 事件处理
-    uiFlags eventFlags = check_widget_mouse_event(&widget);
-    bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
-    // bool hovered       = check_flags(eventFlags, UI_FLAGS_HOVERED);
+    // 判断是否在剪裁范围内
+    if (is_visible_clipbox(&widget)) {
+        // 事件处理
+        uiFlags eventFlags = check_widget_mouse_event(&widget);
+        bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
+        // bool hovered       = check_flags(eventFlags, UI_FLAGS_HOVERED);
 
-    if (clicked) {
-        set_flags_enabled(state, UI_FLAGS_OPEN, !check_flags(state, UI_FLAGS_OPEN));
+        if (clicked) {
+            set_flags_enabled(state, UI_FLAGS_OPEN, !check_flags(state, UI_FLAGS_OPEN));
+        }
+
+        // 绘制
+        draw_treenode(window_cmdlist(), &widget, check_flags(state, UI_FLAGS_OPEN), color);
     }
-
-    // 绘制
-    draw_treenode(command_list(), &widget, check_flags(state, UI_FLAGS_OPEN), color);
 
     if (check_flags(state, UI_FLAGS_OPEN)) {
         indent(24.0f); // 增加缩进
@@ -1079,6 +1155,11 @@ bool drag_int(float width, T* value, int min, int max)
     float cy      = char_height();
     widget.bounds = allocate_widget_rect(width, cy);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
     // 事件处理
     uiFlags eventFlags = check_widget_mouse_event(&widget);
     bool hovered       = check_flags(eventFlags, UI_FLAGS_HOVERED);
@@ -1095,7 +1176,7 @@ bool drag_int(float width, T* value, int min, int max)
     // 绘制
     widget.text = format(_T("%d"), (int) *value);
     draw_label(
-        command_list(), &widget, UI_CENTER,
+        window_cmdlist(), &widget, UI_CENTER,
         select_text_foreground(hovered, false),
         select_color(style()->widgetForeground, hovered, false),
         style()->background[UI_COLOR_NORMAL]
@@ -1118,6 +1199,11 @@ bool drag_float(float width, float* value, float min, float max)
     float cy      = char_height();
     widget.bounds = allocate_widget_rect(width, cy);
 
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
     uiFlags eventFlags = check_widget_mouse_event(&widget);
     bool hovered       = check_flags(eventFlags, UI_FLAGS_HOVERED);
 
@@ -1133,7 +1219,7 @@ bool drag_float(float width, float* value, float min, float max)
     // 绘制
     widget.text = format(_T("%0.2f"), *value);
     draw_label(
-        command_list(), &widget, UI_CENTER,
+        window_cmdlist(), &widget, UI_CENTER,
         select_text_foreground(hovered, false),
         select_color(style()->widgetForeground, hovered, false),
         style()->background[UI_COLOR_NORMAL]
@@ -1202,8 +1288,11 @@ bool custom_test(const uiChar* text, float x, float y, float w, float h)
     if (is_capture(&widget)) {
     }
 
-    draw_button(foreground_cmdlist(), &widget);
-    // draw_frame(command_list(), &widget, style()->widgetForeground[UI_COLOR_NORMAL], style()->background[UI_COLOR_NORMAL]);
+    // 绘制
+    if (is_visible_clipbox(&widget)) {
+        draw_button(foreground_cmdlist(), &widget);
+        // draw_frame(window_cmdlist(), &widget, style()->widgetForeground[UI_COLOR_NORMAL], style()->background[UI_COLOR_NORMAL]);
+    }
 
     return clicked;
 }

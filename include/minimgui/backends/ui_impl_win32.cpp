@@ -1,4 +1,5 @@
 ﻿#include "ui_impl_win32.h"
+#include "../ui_widgets.h"
 
 #include <windows.h>
 
@@ -16,6 +17,11 @@ int init_win32(HWND hwnd, HDC hdc)
     if (!_m_hFont) {
         _m_hFont = CreateFont(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, GB2312_CHARSET, 0, 0, DEFAULT_QUALITY, DEFAULT_PITCH, TEXT("Microsoft YaHei"));
     }
+
+    // 初始化屏幕大小
+    RECT rect;
+    GetWindowRect(hwnd, &rect);
+    on_resize(rect.right - rect.left, rect.bottom - rect.top);
 
     return 0;
 }

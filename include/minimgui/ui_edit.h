@@ -9,8 +9,6 @@
 #ifndef UI_EDIT_H_20260316090707
 #define UI_EDIT_H_20260316090707
 
-#include "ui_widgets.h"
-
 namespace minimgui {
 
 } // namespace minimgui

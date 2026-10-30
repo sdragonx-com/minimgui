@@ -355,7 +355,7 @@ bool edit(uiChar* buffer, size_t size)
     }
 
     // 绘制
-    draw_edit(command_list(), edit, focused);
+    draw_edit(window_cmdlist(), edit, focused);
 
     return changed;
 }

@@ -122,6 +122,7 @@ void on_begin_draw(void* instance)
 
     // 关闭背面剔除
     // glDisable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 
     // 关闭深度
     glDisable(GL_DEPTH_TEST);

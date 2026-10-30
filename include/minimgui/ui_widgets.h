@@ -299,10 +299,11 @@ bool is_enabled(uiWidget* widget);           // 判断部件是否激活
 bool check_hover(uiWidget* widget);          // 检查部件是否鼠标悬停
 bool is_hovered(uiWidget* widget);           // 判断部件是否鼠标悬停
 bool is_pressed(uiWidget* widget);           // 判断部件是否鼠标按下
+void set_clicked_widget(uiWidget* widget);   // 设置鼠标点击部件
 bool is_capture(uiWidget* widget);           // 判断部件是否鼠标捕获
 bool is_focus(uiWidget* widget);             // 判断部件是否输入焦点
 void set_focus(uiWidget* widget);            // 设置焦点部件
-void set_clicked_widget(uiWidget* widget);   // 设置鼠标点击部件
+bool is_visible_clipbox(uiWidget* widget);   // 判断部件是否在剪裁矩形内
 
 // 返回部件类型名称
 const uiChar* widget_type_to_string(uiWidgetType type);

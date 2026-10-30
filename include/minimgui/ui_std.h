@@ -215,7 +215,7 @@ public:
         float right  = std::min(x + w, other.x + other.w);
         float bottom = std::min(y + h, other.y + other.h);
 
-        return (right - left) > 0.0f && (bottom - top) > 0.0f;
+        return left < right && top < bottom;
     }
 };
 
@@ -425,7 +425,7 @@ enum uiWidgetType
     UI_WIDGET_MASK_WINDOW    = 0x4000, // 容器
 
     // 窗口 (uiWindow)
-    UI_WIDGET_WINDOW = 0 + UI_WIDGET_MASK_CONTAINER | UI_WIDGET_MASK_WINDOW,
+    UI_WIDGET_WINDOW = 0 | UI_WIDGET_MASK_CONTAINER | UI_WIDGET_MASK_WINDOW,
 
     // 面板 (uiPanel)
     UI_WIDGET_PANEL = 1 + UI_WIDGET_MASK_CONTAINER,

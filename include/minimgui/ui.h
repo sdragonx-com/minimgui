@@ -25,22 +25,30 @@ namespace minimgui {
 void init_gui(); // 初始化
 void shutdown(); // 关闭
 
+//
 // 消息处理
-int on_key_push(int key);
-int on_key_pop(int key);
-int on_input(int ch);
+//
 
-int on_mouse_push(int x, int y, uiButton button);
-int on_mouse_pop(int x, int y, uiButton button);
-int on_mouse_move(int x, int y, uiButton button);
-int on_scroll(int z);
+int on_resize(int width, int height);             // 窗口大小改变
 
+int on_key_push(int key);                         // 按键按下
+int on_key_pop(int key);                          // 按键弹起
+int on_input(int ch);                             // 字符输入
+
+int on_mouse_push(int x, int y, uiButton button); // 鼠标按下
+int on_mouse_pop(int x, int y, uiButton button);  // 鼠标弹起
+int on_mouse_move(int x, int y, uiButton button); // 鼠标移动
+int on_scroll(int z);                             // 滚轮滚动
+
+//
 // 功能函数
+//
+
 bool begin_context(void* instance);  // 开始界面生成
 void end_context(void* instance);    // 结束界面生成
 void render(void* instance);         // 绘制
 
-uiCommandList* command_list();       // 返回当前窗口的绘图列表
+uiCommandList* window_cmdlist();     // 返回当前窗口的绘图列表
 uiCommandList* background_cmdlist(); // 返回背景绘图列表
 uiCommandList* foreground_cmdlist(); // 返回前景绘图列表
 
@@ -49,6 +57,9 @@ void push_clip(float x, float y, float w, float h, bool intersect);
 
 // 弹出剪裁区域
 void pop_clip();
+
+// 判断矩形是否在剪裁矩形内
+bool is_visible_clipbox(const uiRect& rect);
 
 // 布局函数
 void sameline();               // 同一行
