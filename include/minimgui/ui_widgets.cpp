@@ -92,7 +92,7 @@ bool begin_window(const uiChar* text, bool* isOpen, uiVec2 pos, uiVec2 size, uiF
     // 压入布局
     push_layout(window);
 
-     // 绘制窗口
+    // 绘制窗口
     draw_window(&window->cmdlist, window);
 
     // 剪裁客户区矩形

@@ -680,7 +680,7 @@ uiFlags check_widget_mouse_event(uiWidget* widget, bool allowActive)
         return flags;
     }
 
-    //*
+    /*
     if (check_hover(widget)) {
         uiCommandList* cmdlist = foreground_cmdlist();
         if (cmdlist) {
@@ -899,22 +899,7 @@ void on_root_window_click()
 // 计算剪裁矩形
 uiRect compute_clip_rect(uiPanel* panel)
 {
-    const uiStyle& style = m_ui_context.style;
-
-    // 如果有标题栏
-    uiRect rect = panel->bounds;
-    if (check_flags(panel->panelFlags, UI_PANEL_TITLE)) {
-        rect.y += style.titleHeight;
-        rect.h -= style.titleHeight;
-    }
-
-    // 如果有菜单栏
-    if (panel->panelFlags & UI_PANEL_MENU) {
-        rect.y += style.titleHeight;
-        rect.h -= style.titleHeight;
-    }
-
-    return rect;
+    return compute_content_rect(panel, false);
 }
 
 // 计算容器区域矩形 (客户区)
