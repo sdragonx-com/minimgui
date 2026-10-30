@@ -24,6 +24,8 @@ const UINT CODE_PAGE = CP_ACP;
 Gdiplus::Graphics* _m_graph = nullptr;
 Gdiplus::Font* _m_font      = nullptr;
 
+//------------------------------------------------------------------------------
+
 static std::wstring to_wstring(const char* str, int length)
 {
     int wlen = MultiByteToWideChar(CODE_PAGE, 0, str, length, NULL, 0);
@@ -45,6 +47,8 @@ static Gdiplus::Color toColor(const uiColor& color)
 {
     return Gdiplus::Color(color.a, color.r, color.g, color.b);
 }
+
+//------------------------------------------------------------------------------
 
 // 初始化界面环境
 void on_begin_context(void* instance)
@@ -80,11 +84,18 @@ void on_end_draw(void* instance)
 {
     (void) instance;
 
-    delete _m_graph;
-    _m_graph = nullptr;
-    delete _m_font;
-    _m_font = nullptr;
+    if (_m_graph) {
+        delete _m_graph;
+        _m_graph = nullptr;
+    }
+
+    if (_m_font) {
+        delete _m_font;
+        _m_font = nullptr;
+    }
 }
+
+//------------------------------------------------------------------------------
 
 // 绘制命令列表
 void draw_cmd(const uiCommandList& cmdlist, void* instance)
@@ -122,14 +133,12 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
                 _m_graph->DrawRectangle(&pen, points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
             }
-
             break;
         case uiCommandList::RECT | uiCommandList::FILL_MODE:
             points = cmdlist.point_data() + cmd.geom.index;
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
                 _m_graph->FillRectangle(&brush, points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
             }
-
             break;
         case uiCommandList::ROUND_RECT:
             points = cmdlist.point_data() + cmd.geom.index;
@@ -190,10 +199,11 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
         case uiCommandList::STRING: // 绘制字符串
         {
             textBrush.SetColor(RedBlueSwap(cmd.text.color));
-            points = cmdlist.point_data() + cmd.text.index;
+            points              = cmdlist.point_data() + cmd.text.index;
+            const uiString& str = cmdlist.strings(cmd.text.string);
             #if defined(UNICODE)
             _m_graph->DrawString(
-                cmdlist.strings(cmd.text.string).c_str(), (int) cmdlist.strings(cmd.text.string).length(),
+                str.c_str(), (int) str.length(),
                 _m_font,
                 Gdiplus::PointF(points[0].x, points[0].y),
                 &format,
@@ -212,7 +222,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             break;
         }
         case uiCommandList::PUSH_CLIP_RESET:
-            // printf("push clip [%0.2f, %0.2f, %0.2f, %0.2f]\n", points[0].x, points[0].y, points[1].x, points[1].y);
+            // printf("push clip [%0.2f, %0.2f, %0.2f, %0.2f]\n", cmd.clip.x, cmd.clip.y, cmd.clip.w, cmd.clip.h);
             {
                 if (_m_graph->IsClipEmpty()) {
                     // 如果是空则不添加
@@ -226,7 +236,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             }
             break;
         case uiCommandList::PUSH_CLIP_INTERSECT:
-            // printf("push clip [%0.2f, %0.2f, %0.2f, %0.2f]\n", points[0].x, points[0].y, points[1].x, points[1].y);
+            // printf("push clip [%0.2f, %0.2f, %0.2f, %0.2f]\n", cmd.clip.x, cmd.clip.y, cmd.clip.w, cmd.clip.h);
             {
                 if (_m_graph->IsClipEmpty()) {
                     // 如果是空则不添加
