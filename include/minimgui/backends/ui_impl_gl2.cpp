@@ -383,7 +383,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
 // 返回字符宽度
 float char_width(int ch)
 {
-    _m_font.char_width(ch);
+    return _m_font.char_width(ch);
 }
 
 // 返回字符高度
