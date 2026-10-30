@@ -100,6 +100,8 @@ void on_end_draw(void* instance)
 // 绘制命令列表
 void draw_cmd(const uiCommandList& cmdlist, void* instance)
 {
+    (void) instance;
+
     Gdiplus::Pen pen(Gdiplus::Color::Black, 1.0f);
     Gdiplus::SolidBrush brush(Gdiplus::Color::White);
     Gdiplus::SolidBrush textBrush(Gdiplus::Color::Black);

@@ -177,6 +177,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
     HBRUSH hOldBrush = (HBRUSH) GetCurrentObject(hdc, OBJ_BRUSH);
     std::vector<RECT> clipstack;
     RECT rect;
+    uiColor brushColor;
 
     HFONT hFont    = _m_hFont;
     HFONT hOldFont = (HFONT) SelectObject(hdc, hFont);
@@ -196,7 +197,13 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             if (hBrush) {
                 DeleteObject(hBrush);
             }
-            hBrush = CreateSolidBrush(cmd.fill.color & 0x00FFFFFF);
+            hBrush     = CreateSolidBrush(cmd.fill.color & 0x00FFFFFF);
+            brushColor = uiColor(
+                RGBA_RED(cmd.fill.color),
+                RGBA_GREEN(cmd.fill.color),
+                RGBA_BLUE(cmd.fill.color),
+                RGBA_ALPHA(cmd.fill.color)
+            );
             break;
         case uiCommandList::FILL_IMAGE:
             break;
@@ -225,8 +232,9 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
                 Rectangle(hdc, TO_RECT(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y));
             }
             /*/
-            for (size_t i = 1; i < cmd.count; i += 2) {
-                FillRectAlpha(hdc, points[ i - 1].x, points[ i - 1].y, points[ i - 0].x, points[ i - 0].y, cmd.color);
+            points = cmdlist.point_data() + cmd.geom.index;
+            for (size_t i = 1; i < cmd.geom.count; i += 2) {
+                FillRectAlpha(hdc, points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y, brushColor);
             }
             //*/
 
