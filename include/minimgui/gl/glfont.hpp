@@ -9,20 +9,18 @@
 #ifndef GLFONT_HPP_20150405014710_STB
 #define GLFONT_HPP_20150405014710_STB
 
-#include <cgl/public.h>
-#include <cgl/graphics/gl/glimagelist.hpp>
-#include <cgl/graphics/gl/gl110/draw.hpp>
-#include <cgl/io/utility.hpp>
+#include "glimagelist.hpp"
 
 #include <stb/stb_truetype.h>
 
+namespace minimgui {
 
-namespace cgl {
-namespace graphics {
-
-class glfont_stb
+class glfont
 {
 public:
+    typedef uint8_t byte_t;
+    typedef glm::u8vec4 vec4ub;
+
     // 字形矩阵
     struct char_info    // glyph_metrics
     {
@@ -50,13 +48,13 @@ public:
     vec4ub color;
 
 public:
-    glfont_stb() : m_font(), m_imagelist() { }
-    glfont_stb(const char* filename, float fontSize, size_t textureSize = DEFAULT_TEXTURE_SIZE) :
+    glfont() : m_font(), m_imagelist() { }
+    glfont(const char* filename, float fontSize, size_t textureSize = DEFAULT_TEXTURE_SIZE) :
         m_font(), m_imagelist()
     {
         this->load(filename, fontSize, textureSize);
     }
-    ~glfont_stb()
+    ~glfont()
     {
         this->dispose();
     }
@@ -77,7 +75,7 @@ public:
     int load(const char* filename, float fontSize, size_t textureSize = DEFAULT_TEXTURE_SIZE)
     {
         // 读取字体
-        if (io::load_file(m_fontData, filename) != CGL_OK) {
+        if (load_file(m_fontData, filename) == 0) {
             printf("freetype> load font failed: %s.\n", filename);
             return -1;
         }
@@ -209,6 +207,7 @@ public:
         return m_imagelist.icons(ch);
     }
 
+    #if 0
     // 输出一个字符
     float put_char(float x, float y, wchar_t ch)
     {
@@ -253,6 +252,7 @@ public:
             x += this->put_char(x, y, ch);
         }
     }
+    #endif
 
 private:
     // 渲染字符
@@ -324,7 +324,6 @@ private:
     }
 };
 
-} // end namespace graphics
-} // end namespace cgl
+} // namespace minimgui
 
 #endif // GLFONT_HPP_20150405014710_STB

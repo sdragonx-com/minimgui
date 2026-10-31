@@ -37,6 +37,7 @@ const uiChar* widget_type_to_string(uiWidgetType type)
     case UI_WIDGET_CHECKBOX: return _T("Check");          // 选择框
     case UI_WIDGET_DRAG_NUMBER: return _T("DragNum");     // 拖拽数字
     case UI_WIDGET_EDIT: return _T("Edit");               // 单行编辑框
+    case UI_WIDGET_IMAGE: return _T("Image");             // 图片框
     case UI_WIDGET_LABEL: return _T("Label");             // 文本框
     case UI_WIDGET_MENU_ITEM: return _T("MenuItem");      // 菜单项
     case UI_WIDGET_SCROLL: return _T("Scroll");           // 滚动条
@@ -549,7 +550,7 @@ bool menu_item(const uiChar* text)
 {
     // 分隔符
     if (_tcscmp(text, _T("-")) == 0) {
-        separator(uiString());
+        separator();
         return false;
     }
 
@@ -727,6 +728,62 @@ bool checkbox(const uiChar* text, bool* checked)
     return clicked;
 }
 
+// 标志选择框
+bool checkbox(const uiChar* text, uint32_t* flags, uint32_t flag)
+{
+    struct
+    {
+        void* ptr;
+        uint32_t flag;
+    } idSource = { &flags, flag };
+
+    uiWidget widget(UI_WIDGET_CHECKBOX, text, ui_hash(&idSource, sizeof(idSource)), layout()->container);
+
+    float cx      = text_width(text, _tcslen(text)) + style()->framePadding.x * 2.0f;
+    float cy      = char_height() + style()->framePadding.y * 2.0f;
+    widget.bounds = allocate_widget_rect(cy + 4.0f + cx, cy);
+
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        return false;
+    }
+
+    // 事件处理
+    uiFlags eventFlags = check_widget_mouse_event(&widget);
+    bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
+
+    if (clicked) {
+        set_flags_masked(*flags, check_flags(*flags, flag) ? 0 : flag, flag);
+    }
+
+    // 绘制
+    draw_check_box(window_cmdlist(), &widget, check_flags(*flags, flag));
+
+    return clicked;
+}
+
+// 图片框
+bool image(const uiChar* text, uiHandle id, uiVec2 imageSize, uiVec2 size, uiFlags align)
+{
+    uiWidget widget(UI_WIDGET_IMAGE, text, 0, layout()->container);
+
+    widget.bounds = allocate_widget_rect(size.x, size.y);
+
+    // 判断是否在剪裁范围内
+    if (!is_visible_clipbox(&widget)) {
+        // return false;
+    }
+
+    // 事件处理
+    uiFlags eventFlags = check_widget_mouse_event(&widget);
+    bool clicked       = check_flags(eventFlags, UI_FLAGS_CLICKED);
+
+    // 绘制
+    draw_image_box(window_cmdlist(), &widget, id, imageSize, align);
+
+    return clicked;
+}
+
 // 可选择按钮
 bool selectable(const uiChar* text, bool selected, uiVec2 size)
 {
@@ -756,17 +813,18 @@ bool selectable(const uiChar* text, bool selected, uiVec2 size)
 //------------------------------------------------------------------------------
 
 // 分隔符
-void separator(const uiString& text)
+void separator(const uiChar* text)
 {
     // 分隔符高度
-    const float cy    = text.empty() ? char_height() * 0.5f : char_height();
+    const float cy    = text == nullptr ? char_height() * 0.5f : char_height();
     const uiRect rect = allocate_widget_rect(-1.0f, cy);
 
     // 绘制
     if (is_visible_clipbox(rect)) {
-        draw_separator(window_cmdlist(), rect, text);
+        draw_separator(window_cmdlist(), rect, text ? text : uiString());
     }
 }
+
 //------------------------------------------------------------------------------
 
 // 滑块，ID 生成使用变量地址
@@ -931,7 +989,7 @@ bool vscroll(const uiChar* text, float* value, float min, float max)
 // 开始列表框
 bool begin_list(const uiChar* text)
 {
-    return begin_child(text, UI_PANEL_SCROLL);
+    return begin_child(text, UI_PANEL_SCROLL | UI_PANEL_BORDER);
 }
 
 // 结束列表框

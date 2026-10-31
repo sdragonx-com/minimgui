@@ -340,27 +340,30 @@ void draw_frame(uiCommandList* cmdlist, uiWidget* widget, const uiColor& border,
 // 绘制窗口
 void draw_window(uiCommandList* cmdlist, uiWindow* window);
 
-// 绘制折叠面板
-void draw_collapsible(uiCommandList* cmdlist, uiWidget* widget, bool isCollapsed);
-
-// 绘制菜单窗口
-void draw_menu_window(uiCommandList* cmdlist, uiWindow* window);
-
-// 绘制菜单项
-void draw_menu_item(uiCommandList* cmdlist, uiWidget* widget, bool hovered, bool checked, bool hasSubMenu);
-
-// 绘制标签
-void draw_label(uiCommandList* cmdlist, const uiRect& rect, const uiString& text, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background);
-void draw_label(uiCommandList* cmdlist, uiWidget* widget, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background);
-
 // 绘制按钮
 void draw_button(uiCommandList* cmdlist, uiWidget* widget);
 
 // 绘制标签
 void draw_check_box(uiCommandList* cmdlist, uiWidget* widget, bool checked);
 
+// 绘制折叠面板
+void draw_collapsible(uiCommandList* cmdlist, uiWidget* widget, bool isCollapsed);
+
 // 绘制组合框
 void draw_combo(uiCommandList* cmdlist, uiWidget* widget, bool opened);
+
+// 绘制图片框
+void draw_image_box(uiCommandList* cmdlist, uiWidget* widget, uiHandle image, uiVec2 size, uiFlags align);
+
+// 绘制标签
+void draw_label(uiCommandList* cmdlist, const uiRect& rect, const uiString& text, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background);
+void draw_label(uiCommandList* cmdlist, uiWidget* widget, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background);
+
+// 绘制菜单窗口
+void draw_menu_window(uiCommandList* cmdlist, uiWindow* window);
+
+// 绘制菜单项
+void draw_menu_item(uiCommandList* cmdlist, uiWidget* widget, bool hovered, bool checked, bool hasSubMenu);
 
 // 绘制滑块
 void draw_slider(uiCommandList* cmdlist, uiWidget* widget, float value, float min, float max);

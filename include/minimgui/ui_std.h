@@ -24,30 +24,11 @@
 
 // std
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <vector>
 
-// glm
-#if (defined(__BORLANDC__) && !defined(__clang__))
-    #include <cgl/external/glm/glm/glm.hpp>
-
-#else // CGL_USE_GLM98
-    // glm 1.0.1
-    #if !defined(GLM_ENABLE_EXPERIMENTAL)
-        #define GLM_ENABLE_EXPERIMENTAL
-    #endif
-
-    #include <glm/glm.hpp>
-
-    #ifndef GLM_API
-        #define GLM_API     inline
-        #define GLM_INS_API inline
-    #endif
-
-    #ifndef GLM_CLASS_TYPEDEF
-        #define GLM_CLASS_TYPEDEF CGL_CLASS_TYPEDEF
-    #endif
-
-#endif // CGL_USE_GLM98
+#include "ui_math.h"
 
 namespace minimgui {
 
@@ -58,8 +39,6 @@ typedef wchar_t uiChar;
 // #define UI_USE_UTF8
 typedef char uiChar;
 #endif
-
-using glm::clamp;
 
 typedef std::basic_string<uiChar> uiString;
 
@@ -74,163 +53,6 @@ typedef uint32_t uiFlags;
 
 // 颜色
 typedef glm::u8vec4 uiColor;
-
-// 二维向量
-typedef glm::vec2 uiVec2;
-typedef glm::ivec2 uiVec2i;
-
-// 矩形
-class uiRect
-{
-public:
-    float x;
-    float y;
-    float w;
-    float h;
-
-public:
-    uiRect() : x(), y(), w(), h() { }
-
-    uiRect(float x, float y, float width, float height) :
-        x(x),
-        y(y),
-        w(width),
-        h(height) { }
-
-    uiRect(uiVec2 pos, uiVec2 size) :
-        x(pos.x),
-        y(pos.y),
-        w(size.x),
-        h(size.y) { }
-
-    // 返回位置
-    uiVec2 position() const
-    {
-        return uiVec2(x, y);
-    }
-
-    // 返回大小
-    uiVec2 size() const
-    {
-        return uiVec2(w, h);
-    }
-
-    // 返回中心点
-    uiVec2 center() const
-    {
-        return uiVec2(x + w * 0.5f, y + h * 0.5f);
-    }
-
-    // 返回位移后的矩形
-    uiRect offset(float x, float y) const
-    {
-        return uiRect(this->x + x, this->y + y, this->w, this->h);
-    }
-
-    uiRect offset(const uiVec2& v) const
-    {
-        return this->offset(v.x, v.y);
-    }
-
-    // 返回放大后的矩形
-    uiRect expand(float cx, float cy) const
-    {
-        return uiRect(
-            x - cx,
-            y - cy,
-            w + cx * 2.0f,
-            h + cy * 2.0f
-        );
-    }
-
-    // 返回缩小后的矩形
-    uiRect shrink(float cx, float cy) const
-    {
-        return uiRect(
-            x + cx,
-            y + cy,
-            w - cx * 2.0f,
-            h - cy * 2.0f
-        );
-    }
-
-    // 返回点是否在矩形内
-    bool contains(float x, float y) const
-    {
-        return x > this->x &&
-               y > this->y &&
-               x < this->x + this->w &&
-               y < this->y + this->h;
-    }
-
-    bool contains(const uiVec2& v) const
-    {
-        return this->contains(v.x, v.y);
-    }
-
-    // 返回矩形是否包含另外一个矩形
-    bool contains(const uiRect& other) const
-    {
-        return x <= other.x &&
-               y <= other.y &&
-               x + w >= other.x + other.w &&
-               y + h >= other.y + other.h;
-    }
-
-    bool contains(const uiVec2& pos, const uiVec2& size) const
-    {
-        return x <= pos.x &&
-               y <= pos.y &&
-               x + w >= pos.x + size.x &&
-               y + h >= pos.y + size.y;
-    }
-
-    // 返回矩形交集
-    uiRect operator&(const uiRect& other) const
-    {
-        float left   = std::max(x, other.x);
-        float top    = std::max(y, other.y);
-        float right  = std::min(x + w, other.x + other.w);
-        float bottom = std::min(y + h, other.y + other.h);
-
-        return uiRect(left, top, right - left, bottom - top);
-    }
-
-    // 返回矩形并集
-    uiRect operator|(const uiRect& other) const
-    {
-        float left   = std::min(x, other.x);
-        float top    = std::min(y, other.y);
-        float right  = std::max(x + w, other.x + other.w);
-        float bottom = std::max(y + h, other.y + other.h);
-
-        return uiRect(left, top, right - left, bottom - top);
-    }
-
-    // 判断矩形是否相交
-    bool collision(const uiRect& other) const
-    {
-        float left   = std::max(x, other.x);
-        float top    = std::max(y, other.y);
-        float right  = std::min(x + w, other.x + other.w);
-        float bottom = std::min(y + h, other.y + other.h);
-
-        return left < right && top < bottom;
-    }
-};
-
-// 边界
-class uiBounds
-{
-public:
-    float left;
-    float top;
-    float right;
-    float bottom;
-
-    uiBounds() : left(), top(), right(), bottom() { }
-    uiBounds(float l, float t, float r, float b) : left(l), top(t), right(r), bottom(b) { }
-};
 
 // clang-format off
 
@@ -271,7 +93,7 @@ inline uint32_t RedBlueSwap(uint32_t color) {
 // clang-format on
 
 // 无效坐标
-const uiVec2 UI_INVALID_POS = uiVec2(-1.0f, -1.0f);
+const uiVec2 UI_INVALID_POS = uiVec2(-FLT_MAX, -FLT_MAX);
 
 // 方位，对齐
 typedef enum uiDirection
@@ -428,14 +250,14 @@ enum uiWidgetType
     UI_WIDGET_WINDOW = 0 | UI_WIDGET_MASK_CONTAINER | UI_WIDGET_MASK_WINDOW,
 
     // 面板 (uiPanel)
-    UI_WIDGET_PANEL = 1 + UI_WIDGET_MASK_CONTAINER,
+    UI_WIDGET_PANEL = 1 | UI_WIDGET_MASK_CONTAINER,
 
     // 容器
-    UI_WIDGET_MENUBAR     = 10 + UI_WIDGET_MASK_CONTAINER, // 菜单栏 (uiPanel)
-    UI_WIDGET_MENU        = 11 + UI_WIDGET_WINDOW,         // 菜单 (uiWindow)
-    UI_WIDGET_STATUSBAR   = 12,                            // 状态栏
-    UI_WIDGET_TOOLBAR     = 13,                            // 工具栏
-    UI_WIDGET_COLLAPSIBLE = 14 + UI_WIDGET_MASK_CONTAINER, // 折叠面板
+    UI_WIDGET_MENUBAR     = 10 | UI_WIDGET_MASK_CONTAINER, // 菜单栏 (uiPanel)
+    UI_WIDGET_MENU        = 11 | UI_WIDGET_WINDOW,         // 菜单 (uiWindow)
+    UI_WIDGET_STATUSBAR   = 12 | UI_WIDGET_MASK_CONTAINER, // 状态栏
+    UI_WIDGET_TOOLBAR     = 13 | UI_WIDGET_MASK_CONTAINER, // 工具栏
+    UI_WIDGET_COLLAPSIBLE = 14 | UI_WIDGET_MASK_CONTAINER, // 折叠面板
 
     // 部件
     UI_WIDGET_BUTTON = 1,  // 按钮
@@ -443,6 +265,7 @@ enum uiWidgetType
     UI_WIDGET_CHECKBOX,    // 选择框
     UI_WIDGET_DRAG_NUMBER, // 拖拽数字
     UI_WIDGET_EDIT,        // 单行编辑框
+    UI_WIDGET_IMAGE,       // 图片框
     UI_WIDGET_LABEL,       // 文本框
     UI_WIDGET_MENU_ITEM,   // 菜单项
     UI_WIDGET_SCROLL,      // 滚动条
@@ -475,6 +298,7 @@ enum uiPanelFlags
     UI_PANEL_TITLE     = 0x0001, // 启用标题栏
     UI_PANEL_MENU      = 0x0002, // 启用菜单栏
     UI_PANEL_SCROLL    = 0x0004, // 启用滚动条
+    UI_PANEL_BORDER    = 0x0008, // 启用边框
     UI_PANEL_PADDING   = 0x0010, // 启用部件边距
     UI_PANEL_SPACE     = 0x0020, // 启用部件间距
     UI_PANEL_RESIZABLE = 0x0040, // 是否可以缩放大小
@@ -483,10 +307,10 @@ enum uiPanelFlags
     // UI_PANEL_VISIBLE   = 0x0200, // 可见 (针对事件处理)
 
     // 面板默认值
-    UI_PANEL_DEFAULT = UI_PANEL_PADDING | UI_PANEL_SPACE | UI_PANEL_SCROLL,
+    UI_PANEL_DEFAULT = UI_PANEL_BORDER | UI_PANEL_PADDING | UI_PANEL_SPACE | UI_PANEL_SCROLL,
 
     // 窗口默认值
-    UI_WINDOW_DEFAULT = UI_PANEL_TITLE | UI_PANEL_PADDING | UI_PANEL_SPACE | UI_PANEL_SCROLL | UI_PANEL_RESIZABLE,
+    UI_WINDOW_DEFAULT = UI_PANEL_TITLE | UI_PANEL_BORDER | UI_PANEL_PADDING | UI_PANEL_SPACE | UI_PANEL_SCROLL | UI_PANEL_RESIZABLE,
 
     // 即时状态
     UI_PANEL_SIZING_X = 0x00010000, // 宽度缩放
@@ -519,14 +343,15 @@ enum uiColorMode
 struct uiStyle
 {
     float titleHeight;                        // 标题栏高度
-    float menuHeight;                         // 菜单高度
+    float borderWidth;                        // 边框宽度
+    float triangleSize;                       // 窗口右下角三角形大小
 
     uiVec2 windowPadding;                     // 窗口边界空白
-    uiVec2 menuPadding;                       // 菜单边框空白
     uiVec2 framePadding;                      // 部件边框空白
     uiVec2 itemSpace;                         // 部件间距
 
-    float triangleSize;                       // 窗口右下角三角形大小
+    float menuHeight;                         // 菜单高度
+    uiVec2 menuPadding;                       // 菜单边框空白
 
     float sliderSize;                         // 滑块大小
     float scrollWidth;                        // 滚动条宽度
@@ -551,6 +376,26 @@ struct uiStyle
 
     uiStyle();
 };
+
+// load file to buffer
+template<typename T>
+int load_file(std::vector<T>& buf, const std::string& filename)
+{
+    std::ifstream in;
+    in.open(filename.c_str(), std::ios::binary);
+    if (in.is_open()) {
+        in.seekg(0, std::ios::end);
+        size_t size = static_cast<size_t>(in.tellg());
+        buf.resize(size / sizeof(T));
+        in.seekg(0, std::ios::beg);
+        in.read(reinterpret_cast<char*>(buf.data()), buf.size() * sizeof(T));
+        return static_cast<int>(in.gcount());
+    }
+    else {
+        std::cout << "load file \"" << filename << "\" failed!" << std::endl;
+        return 0;
+    }
+}
 
 } // namespace minimgui
 

@@ -281,115 +281,7 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window)
     cmdlist->draw_rect(rect.x, rect.y, rect.w, rect.h);
 }
 
-// 绘制折叠面板
-void draw_collapsible(uiCommandList* cmdlist, uiWidget* widget, bool isCollapsed)
-{
-    const bool isHovered = is_hovered(widget);
-    uiRect rect          = widget->bounds;
-
-    // 标题栏背景
-    cmdlist->set_fill(select_color(style()->widgetBackground, isHovered, false));
-    cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
-
-    // 折叠标记
-    cmdlist->set_stroke(style()->foreground[UI_COLOR_NORMAL]);
-    draw_updown_arrow(cmdlist, rect.x, rect.y, rect.h, rect.h, 0.5f, isCollapsed);
-
-    // 标题
-    draw_title(
-        cmdlist,
-        rect.x, rect.y, rect.w, rect.h,
-        widget->text,
-        UI_CENTER,
-        select_text_foreground(isHovered, false)
-    );
-
-    // 边框
-    cmdlist->set_fill(style()->widgetForeground[UI_COLOR_NORMAL]);
-    cmdlist->draw_line(rect.x, rect.y, rect.x + rect.w, rect.y);
-    cmdlist->draw_line(rect.x, rect.y + rect.h, rect.x + rect.w, rect.y + rect.h);
-}
-
-// 绘制菜单窗口
-void draw_menu_window(uiCommandList* cmdlist, uiWindow* window)
-{
-    // 窗口矩形
-    uiRect rect = window->bounds;
-
-    // 背景
-    cmdlist->set_fill(style()->widgetBackground[UI_COLOR_NORMAL]);
-    cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
-
-    // 边框
-    cmdlist->set_stroke(style()->windowForeground[UI_COLOR_NORMAL]);
-    cmdlist->draw_rect(rect.x, rect.y, rect.w, rect.h);
-}
-
-// 绘制菜单项
-void draw_menu_item(uiCommandList* cmdlist, uiWidget* widget, bool hovered, bool checked, bool hasSubMenu)
-{
-    uiRect rect = widget->bounds;
-
-    // 背景
-    if (hovered) {
-        cmdlist->set_fill(style()->widgetBackground[UI_COLOR_HIGHLIGHT]);
-        cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
-    }
-
-    // 选择
-    if (checked) {
-        // todo...
-    }
-
-    // 文字
-    float x = rect.x + style()->framePadding.x + style()->menuHeight; // 边距 + 图标
-    cmdlist->set_text(select_text_foreground(false, false));
-    cmdlist->draw_string(x, rect.y + style()->framePadding.y, widget->text);
-
-    // 右侧箭头（子菜单指示）
-    if (hasSubMenu) {
-        float ax = rect.x + rect.w - 16.0f;
-        float ay = rect.y + rect.h * 0.5f;
-        // 小三角
-        uiVec2 points[] = {
-            uiVec2(ax, ay - 4.0f),
-            uiVec2(ax, ay + 4.0f),
-            uiVec2(ax + 6.0f, ay)
-        };
-        cmdlist->set_fill(style()->foreground[UI_COLOR_NORMAL]);
-        cmdlist->fill_triangle(points);
-    }
-}
-
-// 绘制标签
-void draw_label(uiCommandList* cmdlist, const uiRect& rect, const uiString& text, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background)
-{
-    // 背景
-    if (background.a) {
-        cmdlist->set_fill(background);
-        cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
-    }
-
-    // 边框
-    if (foreground.a) {
-        cmdlist->set_stroke(foreground);
-        cmdlist->draw_rect(rect.x, rect.y, rect.w, rect.h);
-    }
-
-    // 标题
-    draw_title(
-        cmdlist,
-        rect.x, rect.y, rect.w, rect.h,
-        text,
-        align,
-        textcolor
-    );
-}
-
-void draw_label(uiCommandList* cmdlist, uiWidget* widget, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background)
-{
-    draw_label(cmdlist, widget->bounds, widget->text, align, textcolor, foreground, background);
-}
+//------------------------------------------------------------------------------
 
 // 绘制按钮
 void draw_button(uiCommandList* cmdlist, uiWidget* widget)
@@ -468,6 +360,35 @@ void draw_check_box(uiCommandList* cmdlist, uiWidget* widget, bool checked)
     );
 }
 
+// 绘制折叠面板
+void draw_collapsible(uiCommandList* cmdlist, uiWidget* widget, bool isCollapsed)
+{
+    const bool isHovered = is_hovered(widget);
+    uiRect rect          = widget->bounds;
+
+    // 标题栏背景
+    cmdlist->set_fill(select_color(style()->widgetBackground, isHovered, false));
+    cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
+
+    // 折叠标记
+    cmdlist->set_stroke(style()->foreground[UI_COLOR_NORMAL]);
+    draw_updown_arrow(cmdlist, rect.x, rect.y, rect.h, rect.h, 0.5f, isCollapsed);
+
+    // 标题
+    draw_title(
+        cmdlist,
+        rect.x, rect.y, rect.w, rect.h,
+        widget->text,
+        UI_CENTER,
+        select_text_foreground(isHovered, false)
+    );
+
+    // 边框
+    cmdlist->set_fill(style()->widgetForeground[UI_COLOR_NORMAL]);
+    cmdlist->draw_line(rect.x, rect.y, rect.x + rect.w, rect.y);
+    cmdlist->draw_line(rect.x, rect.y + rect.h, rect.x + rect.w, rect.y + rect.h);
+}
+
 // 绘制组合框
 void draw_combo(uiCommandList* cmdlist, uiWidget* widget, bool opened)
 {
@@ -517,6 +438,129 @@ void draw_combo(uiCommandList* cmdlist, uiWidget* widget, bool opened)
     );
 }
 
+// 绘制图片框
+void draw_image_box(uiCommandList* cmdlist, uiWidget* widget, uiHandle image, uiVec2 size, uiFlags align)
+{
+    // 绘制图片
+    uiRect rect = widget->bounds.shrink(1.0f, 1.0f);
+    if (align == UI_FLAGS_NONE) { // 拉伸
+        cmdlist->draw_image(rect, image, colors::white);
+    }
+    else {
+        size = scale_to_rect(size, rect.w, rect.h, false);
+        float x, y;
+
+        // 水平对齐
+        if (check_flags(align, UI_CENTER_H)) {
+            x = rect.x + (rect.w - size.x) * 0.5f;
+        }
+        else if (check_flags(align, UI_RIGHT)) {
+            x = rect.x + rect.w - size.x;
+        }
+        else {
+            x = rect.x;
+        }
+
+        // 垂直对齐
+        if (check_flags(align, UI_CENTER_V)) {
+            y = rect.y + (rect.h - size.y) * 0.5f;
+        }
+        else if (check_flags(align, UI_BOTTOM)) {
+            y = rect.y + rect.h - size.y;
+        }
+        else {
+            y = rect.y;
+        }
+
+        cmdlist->draw_image(x, y, size.x, size.y, image, colors::white);
+    }
+
+    // 边框
+    cmdlist->set_stroke(style()->widgetBackground[UI_COLOR_NORMAL]);
+    cmdlist->draw_rect(widget->bounds);
+}
+
+// 绘制标签
+void draw_label(uiCommandList* cmdlist, const uiRect& rect, const uiString& text, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background)
+{
+    // 背景
+    if (background.a) {
+        cmdlist->set_fill(background);
+        cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
+    }
+
+    // 边框
+    if (foreground.a) {
+        cmdlist->set_stroke(foreground);
+        cmdlist->draw_rect(rect.x, rect.y, rect.w, rect.h);
+    }
+
+    // 标题
+    draw_title(
+        cmdlist,
+        rect.x, rect.y, rect.w, rect.h,
+        text,
+        align,
+        textcolor
+    );
+}
+
+void draw_label(uiCommandList* cmdlist, uiWidget* widget, uiAlign align, uiColor textcolor, uiColor foreground, uiColor background)
+{
+    draw_label(cmdlist, widget->bounds, widget->text, align, textcolor, foreground, background);
+}
+
+// 绘制菜单窗口
+void draw_menu_window(uiCommandList* cmdlist, uiWindow* window)
+{
+    // 窗口矩形
+    uiRect rect = window->bounds;
+
+    // 背景
+    cmdlist->set_fill(style()->widgetBackground[UI_COLOR_NORMAL]);
+    cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
+
+    // 边框
+    cmdlist->set_stroke(style()->windowForeground[UI_COLOR_NORMAL]);
+    cmdlist->draw_rect(rect.x, rect.y, rect.w, rect.h);
+}
+
+// 绘制菜单项
+void draw_menu_item(uiCommandList* cmdlist, uiWidget* widget, bool hovered, bool checked, bool hasSubMenu)
+{
+    uiRect rect = widget->bounds;
+
+    // 背景
+    if (hovered) {
+        cmdlist->set_fill(style()->widgetBackground[UI_COLOR_HIGHLIGHT]);
+        cmdlist->fill_rect(rect.x, rect.y, rect.w, rect.h);
+    }
+
+    // 选择
+    if (checked) {
+        // todo...
+    }
+
+    // 文字
+    float x = rect.x + style()->framePadding.x + style()->menuHeight; // 边距 + 图标
+    cmdlist->set_text(select_text_foreground(false, false));
+    cmdlist->draw_string(x, rect.y + style()->framePadding.y, widget->text);
+
+    // 右侧箭头（子菜单指示）
+    if (hasSubMenu) {
+        float ax = rect.x + rect.w - 16.0f;
+        float ay = rect.y + rect.h * 0.5f;
+        // 小三角
+        uiVec2 points[] = {
+            uiVec2(ax, ay - 4.0f),
+            uiVec2(ax, ay + 4.0f),
+            uiVec2(ax + 6.0f, ay)
+        };
+        cmdlist->set_fill(style()->foreground[UI_COLOR_NORMAL]);
+        cmdlist->fill_triangle(points);
+    }
+}
+
 // 绘制滑块
 void draw_slider(uiCommandList* cmdlist, uiWidget* widget, float value, float min, float max)
 {
@@ -546,25 +590,6 @@ void draw_slider(uiCommandList* cmdlist, uiWidget* widget, float value, float mi
         select_text_foreground(isHovered, false)
     );
 }
-
-// 绘制滚动条 (需要重复计算参数)
-/*
-void draw_scroll(uiCommandList* cmdlist, uiWidget* widget, float value, float min, float max)
-{
-    const bool isHovered = is_hovered(widget);
-
-    // 背景
-    cmdlist->set_color(isHovered ? uiColor(0, 0, 0, 80) : uiColor(0, 0, 0, 64));
-    cmdlist->fill_rect(widget->bounds.x, widget->bounds.y, widget->bounds.w, widget->bounds.h);
-
-    // 滑块
-    const float sliderSize  = context()->style.scrollWidth * 2.0f;
-    const float sliderRange = widget->bounds.w - sliderSize;
-    const float sliderPos   = (value - min) / (max - min) * sliderRange;
-    cmdlist->set_color(isHovered ? uiColor(0, 0, 0, 128) : uiColor(0, 0, 0, 64));
-    cmdlist->fill_rect(widget->bounds.x + sliderPos, widget->bounds.y, sliderSize, widget->bounds.h);
-}
-*/
 
 // 绘制横向滚动条
 void draw_hscroll(uiCommandList* cmdlist, uiWidget* widget, float value, float sliderPos, float sliderSize)

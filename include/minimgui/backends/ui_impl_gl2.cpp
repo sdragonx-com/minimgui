@@ -1,12 +1,21 @@
 ﻿#include "ui_impl_gl2.h"
 #include "../ui_gfx.h"
+#include "../ui_user.h"
 
-#include <cgl/graphics/gl/glfont_stb.hpp>
-#include <cgl/graphics/gl/glfont_freetype.hpp>
+// #include "../ui_font.h"
+
+#include <minimgui/gl/glfont.hpp>
+#include <GLFW/glfw3.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include <stb/stb_truetype.h>
 
 namespace minimgui {
 
-static cgl::graphics::glfont _m_font;
+static glfont _m_font;
 
 // 初始化 OpenGL 实例环境
 void init_gl2(void* instance)
@@ -306,8 +315,8 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             uiVec2 pos          = cmdlist.points(cmd.text.index);
             GLuint texID        = 0;
             for (size_t i = 0; i < str.length(); ++i) {
-                uiChar ch                         = str[i];
-                cgl::graphics::glfont::glyph icon = _m_font.get_char(ch);
+                uiChar ch          = str[i];
+                glfont::glyph icon = _m_font.get_char(ch);
                 if (!icon) {
                     continue;
                 }
@@ -331,6 +340,15 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             }
             break;
         }
+        case uiCommandList::IMAGE:
+            points = cmdlist.point_data() + cmd.image.index;
+            {
+                renderer.set_color(cmd.image.color);
+                renderer.set_texture(cmdlist.images(cmd.image.id));
+                renderer.draw_image(points[0].x, points[0].y, points[1].x, points[1].y);
+                renderer.set_texture(0);
+            }
+            break;
         case uiCommandList::PUSH_CLIP_RESET: {
             // printf("push clip [%0.2f, %0.2f, %0.2f, %0.2f]\n", points[0].x, points[0].y, points[1].x, points[1].y);
             glGetFloatv(GL_SCISSOR_BOX, &rect.x);
@@ -400,6 +418,66 @@ float char_height()
 float text_width(const uiChar* text, size_t length)
 {
     return _m_font.text_width(text, length);
+}
+
+// 创建纹理
+static GLuint create_texture2D(int w, int h, const void* data)
+{
+    GLuint texID = 0;
+
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    // set filter mode
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    // set wrap mode
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return texID;
+}
+
+// 创建图片 (RGBA)
+uiHandle create_image(int width, int height)
+{
+    return create_texture2D(width, height, nullptr);
+}
+
+// 加载图片
+uiHandle load_image(const char* filename)
+{
+    GLuint texID = 0;
+    int w, h, channels;
+
+    // stbi_set_flip_vertically_on_load(flipY ? GL_TRUE : GL_FALSE);
+
+    stbi_uc* image = stbi_load(filename, &w, &h, &channels, 4);
+
+    if (image) {
+        texID = create_texture2D(w, h, image);
+        stbi_image_free(image);
+    }
+    else {
+        printf("load image \"%s\" failed.\n", filename);
+    }
+
+    return texID;
+}
+
+uiHandle load_image(const wchar_t* filename)
+{
+}
+
+// 删除图片
+void delete_image(uiHandle image)
+{
+    GLuint texID = (GLuint) image;
+    glDeleteTextures(1, &texID);
 }
 
 } // namespace minimgui

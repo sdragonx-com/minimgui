@@ -7,13 +7,6 @@
 
 #include <xxh3.h>
 
-#if defined(__GNUC__)
-#elif defined(_MSC_VER)
-    #pragma comment(lib, "xxhash_static.lib")
-#else
-    #pragma comment(lib, "xxhash.lib")
-#endif
-
 namespace minimgui {
 
 // 生成 hashID
@@ -71,24 +64,6 @@ const wchar_t* format(const wchar_t* param, ...)
     va_end(body);
 
     return buf;
-}
-
-static inline float cross2(uiVec2 a, uiVec2 b)
-{
-    return a.x * b.y - a.y * b.x;
-}
-
-// 判断点 p 是否在三角形 abc 内
-bool point_in_triangle(uiVec2 p, uiVec2 a, uiVec2 b, uiVec2 c)
-{
-    float d1 = cross2(p - a, b - a);
-    float d2 = cross2(p - b, c - b);
-    float d3 = cross2(p - c, a - c);
-
-    bool has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-    bool has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-
-    return !(has_neg && has_pos);
 }
 
 } // namespace minimgui

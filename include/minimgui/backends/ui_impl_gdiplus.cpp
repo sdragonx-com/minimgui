@@ -8,7 +8,7 @@
 #include <propidl.h>
 #include <gdiplus.h>
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__BORLANDC__)
     #pragma comment(lib, "gdiplus.lib")
 #endif
 
@@ -26,7 +26,7 @@ Gdiplus::Font* _m_font      = nullptr;
 
 //------------------------------------------------------------------------------
 
-static std::wstring to_wstring(const char* str, int length)
+std::wstring to_wstring(const char* str, int length)
 {
     int wlen = MultiByteToWideChar(CODE_PAGE, 0, str, length, NULL, 0);
     if (wlen <= 0)
@@ -38,15 +38,17 @@ static std::wstring to_wstring(const char* str, int length)
     return wstr;
 }
 
-static std::wstring to_wstring(const std::string& str)
+std::wstring to_wstring(const std::string& str)
 {
     return to_wstring(str.c_str(), str.length());
 }
 
+/*
 static Gdiplus::Color toColor(const uiColor& color)
 {
     return Gdiplus::Color(color.a, color.r, color.g, color.b);
 }
+*/
 
 //------------------------------------------------------------------------------
 
@@ -223,6 +225,13 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             #endif
             break;
         }
+        case uiCommandList::IMAGE:
+            points = cmdlist.point_data() + cmd.image.index;
+            {
+                Gdiplus::Bitmap* pBitmap = (Gdiplus::Bitmap*) cmdlist.images(cmd.image.id);
+                _m_graph->DrawImage(pBitmap, points[0].x, points[0].y, points[1].x, points[1].y);
+            }
+            break;
         case uiCommandList::PUSH_CLIP_RESET:
             // printf("push clip [%0.2f, %0.2f, %0.2f, %0.2f]\n", cmd.clip.x, cmd.clip.y, cmd.clip.w, cmd.clip.h);
             {
@@ -394,5 +403,61 @@ int count_char_widths(std::vector<float>& widths, const wchar_t* text, size_t le
     return 0;
 }
 #endif
+
+// 创建图片 (RGBA)
+uiHandle create_image(int width, int height)
+{
+    HBITMAP hBitmap;
+    BITMAPV5HEADER bi;
+    void* lpBits = 0;
+
+    ZeroMemory(&bi, sizeof(BITMAPV5HEADER));
+    bi.bV5Size        = sizeof(BITMAPV5HEADER);
+    bi.bV5Width       = width;
+    bi.bV5Height      = height;
+    bi.bV5Planes      = 1;
+    bi.bV5BitCount    = 32;
+    bi.bV5Compression = BI_BITFIELDS;
+    bi.bV5RedMask     = 0x00FF0000;
+    bi.bV5GreenMask   = 0x0000FF00;
+    bi.bV5BlueMask    = 0x000000FF;
+    bi.bV5AlphaMask   = 0xFF000000;
+
+    hBitmap = CreateDIBSection(GetDC(nullptr), (BITMAPINFO*) &bi, DIB_RGB_COLORS, (void**) &lpBits, nullptr, (DWORD) 0);
+
+    return (uiHandle) hBitmap;
+}
+
+// 加载图片
+uiHandle load_image(const char* filename)
+{
+    if (!filename) {
+        return 0;
+    }
+
+    std::wstring wstr = to_wstring(filename, strlen(filename));
+    return load_image(wstr.c_str());
+}
+
+uiHandle load_image(const wchar_t* filename)
+{
+    if (!filename) {
+        return 0;
+    }
+
+    // 加载图片
+    Gdiplus::Bitmap* pBitmap = Gdiplus::Bitmap::FromFile(filename, FALSE);
+    if (pBitmap && pBitmap->GetLastStatus() != Gdiplus::Ok) {
+        return 0;
+    }
+
+    return (uiHandle) pBitmap;
+}
+
+// 删除图片
+void delete_image(uiHandle image)
+{
+    DeleteObject((HBITMAP) image);
+}
 
 } // namespace minimgui

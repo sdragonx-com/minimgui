@@ -14,7 +14,7 @@
 namespace minimgui {
 
 //
-// 界面 API 需要实现的接口
+// 窗口 API 需要实现的接口
 //
 
 // 判断按键是否按下
@@ -50,6 +50,12 @@ float char_height();
 
 // 返回文字宽度
 float text_width(const uiChar* text, size_t length);
+
+// 创建图片 (RGBA)
+uiHandle create_image(int width, int height);
+
+// 删除图片
+void delete_image(uiHandle image);
 
 } // namespace minimgui
 

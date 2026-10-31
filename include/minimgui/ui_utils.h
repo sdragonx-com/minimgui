@@ -31,20 +31,6 @@ const char* bool_to_string(bool value);
 const char* format(const char* param, ...);
 const wchar_t* format(const wchar_t* param, ...);
 
-// 统计数组元素数量
-#if !defined(countof)
-    #define countof(a) (sizeof(a) / sizeof(a[0]))
-#endif
-
-// 判断浮点数是否零
-inline bool is_zero(float n)
-{
-    return fabs(n) < FLT_EPSILON;
-}
-
-// 判断点 p 是否在三角形 abc 内
-bool point_in_triangle(uiVec2 p, uiVec2 a, uiVec2 b, uiVec2 c);
-
 // 判断是否支持标志位
 inline bool check_flags(uint32_t flags, uint32_t value)
 {

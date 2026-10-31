@@ -74,17 +74,20 @@ void set_alpha_style(uiStyle* style)
 
 void set_white_style(uiStyle* style)
 {
-    style->titleHeight = 32.0f;
+    style->titleHeight  = 20.0f;         // 标题栏高度
+    style->borderWidth  = 1.0f;          // 边框宽度
+    style->triangleSize = 20.0f;         // 窗口右下角三角形大小
 
-    style->windowPadding = uiVec2(8.0f);
-    style->menuPadding   = uiVec2(2.0f);
-    style->framePadding  = uiVec2(2.0f);
-    style->itemSpace     = uiVec2(4.0f);
-    style->triangleSize  = 20.0f;
+    style->windowPadding = uiVec2(8.0f); // 窗口边界空白
+    style->framePadding  = uiVec2(2.0f); // 部件边框空白
+    style->itemSpace     = uiVec2(4.0f); // 部件间距
 
-    style->sliderSize      = 16.0f;
-    style->scrollWidth     = 8.0f;
-    style->scrollSliderMin = 16.0f;
+    style->menuHeight  = 20.0f;          // 菜单高度
+    style->menuPadding = uiVec2(2.0f);   // 菜单边框空白
+
+    style->sliderSize      = 16.0f;      // 滑块大小
+    style->scrollWidth     = 8.0f;       // 滚动条宽度
+    style->scrollSliderMin = 16.0f;      // 滚动条滑块最小大小
 
     // uiColor(248, 248, 255, 255)
     // uiColor(64, 192, 255, 255);

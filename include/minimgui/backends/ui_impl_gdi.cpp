@@ -1,9 +1,15 @@
 ﻿#include "ui_impl_gdi.h"
 #include "../ui_gfx.h"
 
+#ifndef PROPID
 #define PROPID ULONG
+#endif
 
-#include <windows.h>
+#include <gdiplus.h>
+
+#if defined(_MSC_VER) || defined(__BORLANDC__)
+    #pragma comment(lib, "gdiplus.lib")
+#endif
 
 namespace minimgui {
 
@@ -20,7 +26,8 @@ static HFONT _m_hFont = nullptr;
 
 //------------------------------------------------------------------------------
 
-static std::wstring to_wstring(const char* str, int length)
+// 转 UNICODE 字符串
+std::wstring to_wstring(const char* str, int length)
 {
     int wlen = MultiByteToWideChar(CODE_PAGE, 0, str, length, NULL, 0);
     if (wlen <= 0)
@@ -32,7 +39,7 @@ static std::wstring to_wstring(const char* str, int length)
     return wstr;
 }
 
-static std::wstring to_wstring(const std::string& str)
+std::wstring to_wstring(const std::string& str)
 {
     return to_wstring(str.c_str(), str.length());
 }
@@ -85,7 +92,7 @@ void on_end_draw(void* instance)
 //------------------------------------------------------------------------------
 
 // 用 AlphaBlend 填充半透明矩形
-static BOOL FillRectAlpha(HDC hdc, int x, int y, int w, int h, uiColor color)
+BOOL fill_rect_alpha(HDC hdc, int x, int y, int w, int h, uiColor color)
 {
     if (!hdc || color.a == 0) {
         return TRUE; // 完全透明，无需绘制
@@ -171,6 +178,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
 {
     (void) instance;
     HDC hdc          = _m_hdc;
+    HDC hBmpDC       = CreateCompatibleDC(nullptr);
     HPEN hPen        = nullptr;
     HBRUSH hBrush    = nullptr;
     HPEN hOldPen     = (HPEN) GetCurrentObject(hdc, OBJ_PEN);
@@ -234,7 +242,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             /*/
             points = cmdlist.point_data() + cmd.geom.index;
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
-                FillRectAlpha(hdc, points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y, brushColor);
+                fill_rect_alpha(hdc, points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y, brushColor);
             }
             //*/
 
@@ -310,13 +318,34 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             points = cmdlist.point_data() + cmd.geom.index;
             fill_polygon(hdc, points, cmd.geom.count);
             break;
-        case uiCommandList::STRING: {
-            SetTextColor(hdc, cmd.text.color);
-            points              = cmdlist.point_data() + cmd.text.index;
-            const uiString& str = cmdlist.strings(cmd.text.string);
-            TextOutW(hdc, (int) points->x, (int) points->y, str.c_str(), str.length());
+        case uiCommandList::STRING:
+            points = cmdlist.point_data() + cmd.text.index;
+            {
+                SetTextColor(hdc, cmd.text.color);
+
+                const uiString& str = cmdlist.strings(cmd.text.string);
+                TextOutW(hdc, (int) points->x, (int) points->y, str.c_str(), str.length());
+            }
             break;
-        }
+        case uiCommandList::IMAGE:
+            points = cmdlist.point_data() + cmd.image.index;
+            {
+                HBITMAP hbmp = (HBITMAP) cmdlist.images(cmd.image.id);
+                BITMAP bm;
+                memset(&bm, 0, sizeof(bm));
+                GetObject(hbmp, sizeof(bm), &bm);
+                SelectObject(hBmpDC, hbmp);
+                // BitBlt(hdc, 0, 0, bm.bmWidth, bm.bmHeight, hBmpDC, 0, 0, SRCCOPY);
+                StretchBlt(
+                    hdc,
+                    (int) points[0].x, (int) points[0].y,
+                    (int) points[1].x, (int) points[1].y,
+                    hBmpDC,
+                    0, 0, bm.bmWidth, bm.bmHeight,
+                    SRCCOPY
+                );
+            }
+            break;
         case uiCommandList::PUSH_CLIP_RESET:
             GetClipBox(hdc, &rect);
             clipstack.push_back(rect);
@@ -358,6 +387,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
     }
 
     // 释放
+    DeleteDC(hBmpDC);
     if (hPen) {
         DeleteObject(hPen);
     }
@@ -367,21 +397,6 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
     SelectObject(hdc, hOldPen);
     SelectObject(hdc, hOldBrush);
     SelectObject(hdc, hOldFont);
-}
-
-// to keys
-uiKey to_uiKey(uint32_t vkey)
-{
-    switch (vkey) {
-    case VK_NEXT:
-        break;
-    case VK_NUMPAD0:
-    case VK_PRINT:
-    case VK_CLEAR:
-    case VK_NUMPAD7:
-        // VK_RETURN;
-        break;
-    }
 }
 
 // 返回字符宽度
@@ -493,5 +508,78 @@ int count_char_widths(std::vector<float>& widths, const wchar_t* text, size_t le
     return 0;
 }
 #endif
+
+// 创建图片 (RGBA)
+uiHandle create_image(int width, int height)
+{
+    HBITMAP hBitmap;
+    BITMAPV5HEADER bi;
+    void* lpBits = 0;
+
+    ZeroMemory(&bi, sizeof(BITMAPV5HEADER));
+    bi.bV5Size        = sizeof(BITMAPV5HEADER);
+    bi.bV5Width       = width;
+    bi.bV5Height      = height;
+    bi.bV5Planes      = 1;
+    bi.bV5BitCount    = 32;
+    bi.bV5Compression = BI_BITFIELDS;
+    bi.bV5RedMask     = 0x00FF0000;
+    bi.bV5GreenMask   = 0x0000FF00;
+    bi.bV5BlueMask    = 0x000000FF;
+    bi.bV5AlphaMask   = 0xFF000000;
+
+    hBitmap = CreateDIBSection(GetDC(nullptr), (BITMAPINFO*) &bi, DIB_RGB_COLORS, (void**) &lpBits, nullptr, (DWORD) 0);
+
+    return (uiHandle) hBitmap;
+}
+
+// 加载图片
+uiHandle load_image(const char* filename)
+{
+    if (!filename) {
+        return 0;
+    }
+
+    std::wstring wstr = to_wstring(filename, strlen(filename));
+    return load_image(wstr.c_str());
+}
+
+uiHandle load_image(const wchar_t* filename)
+{
+    using namespace Gdiplus;
+
+    if (!filename) {
+        return 0;
+    }
+
+    // 初始化 Gdiplus 环境
+    ULONG_PTR gdiplusToken = 0;
+    GdiplusStartupInput gdiplusStartupInput;
+    if (GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Ok) {
+        return 0;
+    }
+
+    // 加载图片并转换为 HBITMAP
+    HBITMAP hBitmap = NULL;
+    Bitmap* pBitmap = Bitmap::FromFile(filename, FALSE);
+    if (pBitmap && pBitmap->GetLastStatus() == Ok) {
+        if (pBitmap->GetHBITMAP(Color::White, &hBitmap) != Ok) {
+            hBitmap = NULL;
+        }
+    }
+    if (pBitmap) {
+        delete pBitmap;
+    }
+
+    GdiplusShutdown(gdiplusToken); // 释放 Gdiplus 环境
+
+    return (uiHandle) hBitmap;
+}
+
+// 删除图片
+void delete_image(uiHandle image)
+{
+    DeleteObject((HBITMAP) image);
+}
 
 } // namespace minimgui

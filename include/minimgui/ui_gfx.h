@@ -20,8 +20,7 @@ namespace minimgui {
 class uiCommandList
 {
 public:
-    typedef void* handle_type;
-
+    // 命令
     enum COMMAND
     {
         NONE = 0x0000,       // 空指令
@@ -200,12 +199,10 @@ public:
 
     struct sprite
     {
-        handle_type image;
+        uiHandle image;
         float x, y;
     };
     */
-
-
 
 private:
     stroke_style m_stroke;  // 线条样式
@@ -216,10 +213,10 @@ private:
     uint32_t m_textColor;   // 文字颜色
     glm::mat3x2 m_transform;
 
-    std::vector<command> m_commands;   // 命令列表
-    std::vector<uiVec2> m_points;      // 顶点列表
-    std::vector<uiString> m_strings;   // 字符串列表
-    std::vector<handle_type> m_images; // 图片列表
+    std::vector<command> m_commands; // 命令列表
+    std::vector<uiVec2> m_points;    // 顶点列表
+    std::vector<uiString> m_strings; // 字符串列表
+    std::vector<uiHandle> m_images;  // 图片列表
 
 public:
     uiCommandList()
@@ -278,6 +275,9 @@ public:
 
     // 返回字符串
     const uiString& strings(size_t id) const { return m_strings[id]; }
+
+    // 返回图片
+    uiHandle images(size_t id) const { return m_images[id]; }
 
     // 压入剪裁矩形
     void push_clip(float x, float y, float w, float h, bool intersect)
@@ -442,7 +442,7 @@ public:
     }
 
     // 设置图片填充
-    void set_fill(const uiColor& color, handle_type image, float offsetX = 0.0f, float offsetY = 0.0f)
+    void set_fill(const uiColor& color, uiHandle image, float offsetX = 0.0f, float offsetY = 0.0f)
     {
         m_fillColor  = RGBA(color.r, color.g, color.b, color.a);
         m_fillImage  = static_cast<uint32_t>(m_images.size());
@@ -735,7 +735,7 @@ public:
     }
 
     // 绘制图片
-    void draw_image(handle_type image, float x, float y, float w, float h, uiColor color)
+    void draw_image(float x, float y, float w, float h, uiHandle image, uiColor color)
     {
         command cmd;
         cmd.inst        = IMAGE;
@@ -749,6 +749,11 @@ public:
 
         m_points.push_back(uiVec2(x, y));
         m_points.push_back(uiVec2(w, h));
+    }
+
+    void draw_image(const uiRect& rect, uiHandle image, uiColor color)
+    {
+        this->draw_image(rect.x, rect.y, rect.w, rect.h, image, color);
     }
 
 private:
@@ -850,7 +855,7 @@ private:
 
 public:
     uiRenderList() :
-        m_commands(), m_vertices(), m_indices() { }
+        m_commands(), m_vertices(), m_indices(), m_clipStack(), m_color(colors::white) { }
 
     // 判断是否为空
     bool empty() const
@@ -1013,7 +1018,7 @@ public:
     // 绘制纹理
     void draw_image(
         float x, float y, float w, float h,
-        float u1 = 0.0f, float v1 = 0.0f, float u2 = 0.0f, float v2 = 0.0f
+        float u1 = 0.0f, float v1 = 0.0f, float u2 = 1.0f, float v2 = 1.0f
     )
     {
         add_cmd(TRIANGLES, 6);
@@ -1021,10 +1026,12 @@ public:
         size_t id = m_vertices.size();
 
         // 添加顶点
-        m_vertices.push_back(uiVertex(uiVec2(x, y), uiVec2(u1, v1), m_color));
-        m_vertices.push_back(uiVertex(uiVec2(x, y + h), uiVec2(u1, v2), m_color));
+        // clang-format off
+        m_vertices.push_back(uiVertex(uiVec2(x,     y    ), uiVec2(u1, v1), m_color));
+        m_vertices.push_back(uiVertex(uiVec2(x,     y + h), uiVec2(u1, v2), m_color));
         m_vertices.push_back(uiVertex(uiVec2(x + w, y + h), uiVec2(u2, v2), m_color));
-        m_vertices.push_back(uiVertex(uiVec2(x + w, y), uiVec2(u2, v1), m_color));
+        m_vertices.push_back(uiVertex(uiVec2(x + w, y    ), uiVec2(u2, v1), m_color));
+        // clang-format on
 
         // 添加索引
         m_indices.push_back(id + 0);

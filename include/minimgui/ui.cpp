@@ -24,7 +24,12 @@ void init_gui()
 {
     m_ui_context.debugFlags = UI_FLAGS_NONE;
 
-    m_ui_context.screen = uiVec2(1280.0f, 720.0f);
+    set_white_style(&m_ui_context.style);
+    // 动态设置标题栏高度
+    // m_ui_context.style.titleHeight = char_height("A") + m_ui_context.style.framePadding.y * 2.0f;
+
+    m_ui_context.screen   = uiVec2(1280.0f, 720.0f);
+    m_ui_context.clipRect = uiRect(uiVec2(), m_ui_context.screen);
 
     m_ui_context.mouse   = uiVec2();
     m_ui_context.lastpos = uiVec2();
@@ -46,11 +51,12 @@ void init_gui()
     m_ui_context.clickedWidget = 0;
     m_ui_context.popupWidget   = 0;
 
-    // 动态设置标题栏高度
-    // m_ui_context.style.titleHeight = char_height("A") + m_ui_context.style.framePadding.y * 2.0f;
-
+    // 初始化主窗口
     m_ui_context.mainWindow.panelFlags = UI_PANEL_MENU;
     m_ui_context.mainWindow.text       = _T("Root");
+
+    m_ui_context.layouts.reserve(32);
+    m_ui_context.indent = 0;
 
     // 菜单堆栈
     m_ui_context.openPath.reserve(64);
@@ -60,6 +66,28 @@ void init_gui()
 // 关闭
 void shutdown()
 {
+    m_ui_context.backgroundCmdList.dispose();
+    m_ui_context.foregroundCmdList.dispose();
+
+    // 释放所有窗口
+    for (size_t i = 0; i < m_ui_context.windows.size(); ++i) {
+        uiWindow* window = m_ui_context.windows[i];
+        // 删除所有部件
+        for (size_t j = 0; j < window->widgets.size(); ++i) {
+            uiWidget* widget = window->widgets[i];
+            delete widget;
+        }
+        // 删除窗口
+        delete window;
+    }
+    m_ui_context.windows.clear();
+
+    m_ui_context.layouts.clear();
+    m_ui_context.indent = 0.0f;
+    m_ui_context.stateCache.clear();
+    m_ui_context.openPath.clear();
+    m_ui_context.menuStack.clear();
+    m_ui_context.popupStack.clear();
 }
 
 //------------------------------------------------------------------------------
@@ -186,7 +214,9 @@ bool begin_context(void* instance)
     // 初始化界面环境
     on_begin_context(instance);
 
+    //
     // 需要重置的状态
+    //
 
     // 动态设置标题栏高度 (因为字体问题可能开始未初始化)
     m_ui_context.style.titleHeight = char_height() + m_ui_context.style.framePadding.y * 2.0f;
@@ -203,14 +233,6 @@ bool begin_context(void* instance)
 
     // 重置悬停部件，每帧只处理一个部件作为悬停部件
     m_ui_context.hoveredWidget = 0;
-
-    // 释放所有组件
-    /*
-    for (auto widget : m_ui_context.widgets) {
-        ui_delete(widget);
-    }
-    m_ui_context.widgets.clear();
-    */
 
     // 清空绘图列表
     m_ui_context.mainWindow.cmdlist.dispose();
@@ -593,7 +615,7 @@ uiFlags check_window_mouse_event(uiWindow* window)
                 if (collapsed) { // 折叠窗口大小
                     window->backupSize.w = window->bounds.w;
                     window->backupSize.h = window->bounds.h;
-                    window->bounds.h = m_ui_context.style.titleHeight;
+                    window->bounds.h     = m_ui_context.style.titleHeight;
                 }
                 else {
                     window->bounds.w = window->backupSize.w;
@@ -905,6 +927,14 @@ uiRect compute_content_rect(uiPanel* panel, bool padding)
         rect.h -= style.titleHeight;
     }
 
+    // 如果有边框
+    if (panel->panelFlags & UI_PANEL_BORDER) {
+        rect.x += style.borderWidth;
+        rect.y += style.borderWidth;
+        rect.w -= style.borderWidth * 2.0f;
+        rect.h -= style.borderWidth * 2.0f;
+    }
+
     // 如果有边界空白
     if (padding && (panel->panelFlags & UI_PANEL_PADDING)) {
         if (panel->type == UI_WIDGET_WINDOW) { // 如果是窗口，不包括菜单窗口
@@ -973,7 +1003,8 @@ uiRect allocate_widget_rect(float width, float height, bool forceNewLine)
 {
     uiLayout* layout = minimgui::layout();
 
-    if (layout->container->type == UI_WIDGET_MENUBAR) { // 菜单栏只分配横向空间
+    // 菜单栏只分配横向空间
+    if (layout->container->type == UI_WIDGET_MENUBAR) {
         return allocate_menubar_item(layout, width, height);
     }
 

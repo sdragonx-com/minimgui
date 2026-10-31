@@ -91,23 +91,28 @@ void end_child();
 // 折叠面板
 bool collapsible_panel(const uiChar* text, uiFlags panelFlags = UI_FLAGS_NONE);
 
-bool begin_menu_bar(const uiChar* text);                                    // 菜单栏开始
-void end_menu_bar();                                                        // 菜单栏结束
-bool begin_menu(const uiChar* text);                                        // 菜单开始
-void end_menu();                                                            // 菜单结束
-bool menu_item(const uiChar* text);                                         // 菜单项
-void cancel_popup();                                                        // 取消弹出窗口
+bool begin_menu_bar(const uiChar* text);                           // 菜单栏开始
+void end_menu_bar();                                               // 菜单栏结束
+bool begin_menu(const uiChar* text);                               // 菜单开始
+void end_menu();                                                   // 菜单结束
+bool menu_item(const uiChar* text);                                // 菜单项
+void cancel_popup();                                               // 取消弹出窗口
+
+bool button(const uiChar* text, uiVec2 size = uiVec2());           // 按钮
+void color_box(uiColor color, float width = -1.0f);                // 显示颜色框
+bool checkbox(const uiChar* text, bool* checked);                  // 单选框，ID 生成使用变量地址
+bool checkbox(const uiChar* text, uint32_t* flags, uint32_t flag); // 标志选择框
+bool edit(uiChar* buffer, size_t size);                            // 编辑框，ID 生成使用变量地址
+
+// 图片框
+bool image(const uiChar* text, uiHandle id, uiVec2 imageSize, uiVec2 size, uiFlags align = UI_FLAGS_NONE);
 
 void label(const uiChar* param, ...);                                       // 标签页 (无鼠标事件)
 void label(float width, const uiChar* param, ...);                          // 固定宽度标签页
 void label(float width, uiAlign align, const uiChar* param, ...);           // 固定宽度标签页
 
-bool button(const uiChar* text, uiVec2 size = uiVec2());                    // 按钮
-void color_box(uiColor color, float width = -1.0f);                         // 显示颜色框
-bool checkbox(const uiChar* text, bool* checked);                           // 单选框，ID 生成使用变量地址
-bool edit(uiChar* buffer, size_t size);                                     // 编辑框，ID 生成使用变量地址
 bool selectable(const uiChar* text, bool selected, uiVec2 size = uiVec2()); // 可选择按钮
-void separator(const uiString& text = uiString());                          // 分隔符 (无鼠标事件)
+void separator(const uiChar* text = nullptr);                               // 分隔符 (无鼠标事件)
 bool slider(const uiChar* text, float* value, float min, float max);        // 滑块，ID 生成使用变量地址
 
 bool hscroll(const uiChar* text, float* value, float min, float max);       // 横向滚动条
