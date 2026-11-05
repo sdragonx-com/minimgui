@@ -18,8 +18,11 @@ namespace minimgui {
 
 int init_glfw(GLFWwindow* window, bool installEvents);
 
-// 按键映射
+// GLFW keys -> UI keys
 int key_map(int key);
+
+// UI keys -> GLFW keys
+int key_unmap(int key);
 
 } // namespace minimgui
 

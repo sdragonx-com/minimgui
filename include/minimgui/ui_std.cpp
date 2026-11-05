@@ -1,5 +1,5 @@
-﻿#include "ui_utils.h"
-#include "ui.h"
+﻿#include "ui_std.h"
+// #include "ui.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -8,6 +8,10 @@
 #include <xxh3.h>
 
 namespace minimgui {
+
+//------------------------------------------------------------------------------
+// 辅助函数
+//------------------------------------------------------------------------------
 
 // 生成 hashID
 uiID ui_hash(const void* data, size_t size)
@@ -25,12 +29,7 @@ uiID ui_hash(const wchar_t* str, size_t length)
     return XXH3_64bits_withSeed(str, length * sizeof(wchar_t), 0);
 }
 
-uiID ui_hash(const std::string& str)
-{
-    return ui_hash(str.c_str(), str.length());
-}
-
-uiID ui_hash(const std::wstring& str)
+uiID ui_hash(const uiString& str)
 {
     return ui_hash(str.c_str(), str.length());
 }

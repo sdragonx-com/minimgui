@@ -684,7 +684,7 @@ public:
     }
 
     // 绘制字符串
-    void draw_string(float x, float y, const uiChar* str, size_t size)
+    void draw_string(float x, float y, const char* str, size_t size)
     {
         this->draw_string(x, y, uiString(str, size));
     }
@@ -709,7 +709,7 @@ public:
     }
 
     // 绘制矩形内格式化的字符串
-    void draw_string(float x, float y, float w, float h, const uiChar* str, size_t size, uint32_t style)
+    void draw_string(float x, float y, float w, float h, const char* str, size_t size, uint32_t style)
     {
         this->draw_string(x, y, w, h, uiString(str, size), style);
     }
@@ -727,6 +727,11 @@ public:
         m_strings.push_back(str);
         m_points.push_back(uiVec2(x, y));
         m_points.push_back(uiVec2(w, h));
+    }
+
+    void draw_string(const uiRect& rect, const char* str, size_t size, uint32_t style)
+    {
+        this->draw_string(rect.x, rect.y, rect.w, rect.h, uiString(str, size), style);
     }
 
     void draw_string(const uiRect& rect, const uiString& str, uint32_t style)
@@ -774,15 +779,15 @@ private:
     }
 
     // 添加命令，合批
-    void add_cmd(uint32_t inst, uint32_t vertices)
+    void add_cmd(uint32_t inst, size_t vertices)
     {
         // 新建命令
         if (m_commands.empty() || m_commands.back().inst != inst || !is_batchable(m_commands.back().inst)) {
-            m_commands.push_back(command(inst, m_points.size(), vertices));
+            m_commands.push_back(command(inst, static_cast<uint32_t>(m_points.size()), static_cast<uint32_t>(vertices)));
         }
         else {
             // 增加顶点数量
-            m_commands.back().geom.count += vertices;
+            m_commands.back().geom.count += static_cast<uint32_t>(vertices);
         }
     }
 };
@@ -919,7 +924,7 @@ public:
     {
         add_cmd(LINES, 2);
 
-        size_t id = m_vertices.size();
+        uint32_t id = static_cast<uint32_t>(m_vertices.size());
 
         // 添加顶点
         m_vertices.push_back(uiVertex(uiVec2(x1, y1), uiVec2(0.0f, 0.0f), m_color));
@@ -935,7 +940,7 @@ public:
     {
         add_cmd(LINES, 8);
 
-        size_t id = m_vertices.size();
+        uint32_t id = static_cast<uint32_t>(m_vertices.size());
 
         // 添加顶点
         m_vertices.push_back(uiVertex(uiVec2(x, y), uiVec2(0.0f, 0.0f), m_color));
@@ -959,7 +964,7 @@ public:
     {
         add_cmd(TRIANGLES, 6);
 
-        size_t id = m_vertices.size();
+        uint32_t id = static_cast<uint32_t>(m_vertices.size());
 
         // 添加顶点
         m_vertices.push_back(uiVertex(uiVec2(x, y), uiVec2(0.0f, 0.0f), m_color));
@@ -981,7 +986,7 @@ public:
     {
         add_cmd(LINES, 4);
 
-        size_t id = m_vertices.size();
+        uint32_t id = static_cast<uint32_t>(m_vertices.size());
 
         // 添加顶点
         m_vertices.push_back(uiVertex(uiVec2(x1, y1), uiVec2(0.0f, 0.0f), m_color));
@@ -1002,7 +1007,7 @@ public:
     {
         add_cmd(TRIANGLES, 3);
 
-        size_t id = m_vertices.size();
+        uint32_t id = static_cast<uint32_t>(m_vertices.size());
 
         // 添加顶点
         m_vertices.push_back(uiVertex(uiVec2(x1, y1), uiVec2(0.0f, 0.0f), m_color));
@@ -1023,7 +1028,7 @@ public:
     {
         add_cmd(TRIANGLES, 6);
 
-        size_t id = m_vertices.size();
+        uint32_t id = static_cast<uint32_t>(m_vertices.size());
 
         // 添加顶点
         // clang-format off
@@ -1070,7 +1075,7 @@ private:
         if (m_commands.empty() ||
             m_commands.back().inst != inst ||
             !is_batchable(m_commands.back().inst)) {
-            m_commands.push_back(command(inst, m_indices.size(), count));
+            m_commands.push_back(command(inst, static_cast<uint32_t>(m_indices.size()), count));
         }
         else {
             // 增加索引数量

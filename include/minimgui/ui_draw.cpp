@@ -189,7 +189,11 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window)
         draw_title(
             cmdlist,
             rect.x, rect.y, rect.w, titleHeight,
-            format(_T("%s : %llu"), window->text.c_str(), window->id),
+            #if defined(_DEBUG) || !defined(NDEBUG)
+            format("%s : %llu", window->text.c_str(), window->id),
+            #else
+            window->text,
+            #endif
             // window->text,
             UI_CENTER,
             select_color(style()->titleForeground, false, isActived)
@@ -228,10 +232,6 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window)
         // 三角形绘制大小略比鼠标判定大小小一些
         const float TRIANGLE_SIZE = style()->triangleSize * 0.75f;
 
-        if (window->text == _T("design")) {
-            // printf("design\n");
-        }
-
         // 垂直滚动条
         if (window->scrollMax.y > 0.0f) {
             // const float titleHeight = ((window->panelFlags & UI_PANEL_TITLE) ? style()->titleHeight : 0.0f);
@@ -259,8 +259,8 @@ void draw_window(uiCommandList* cmdlist, uiWindow* window)
                 }
 
                 // 绘制滚动条
-                vscroll(format(_T("%ls.vscroll"), window->text.c_str()), rect, &window->scroll.y, 0.0f, scrollMax);
-                // vscroll(format(_T("%p.vscroll"), window), rect, &window->scroll.y, 0.0f, scrollMax);
+                // vscroll(window->text + ".vscroll", rect, &window->scroll.y, 0.0f, scrollMax);
+                vscroll(format("%p.vscroll", window), rect, &window->scroll.y, 0.0f, scrollMax);
             }
         }
 
@@ -585,7 +585,7 @@ void draw_slider(uiCommandList* cmdlist, uiWidget* widget, float value, float mi
     draw_title(
         cmdlist,
         rect.x, rect.y, rect.w, rect.h,
-        format(_T("%s: %0.3f"), widget->text.c_str(), value),
+        format("%s: %0.3f", widget->text.c_str(), value),
         UI_CENTER,
         select_text_foreground(isHovered, false)
     );

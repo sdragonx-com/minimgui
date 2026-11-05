@@ -3,6 +3,8 @@
 #include "ui_user.h"
 
 #include <ctype.h>
+#include <stdio.h>
+
 
 namespace minimgui {
 
@@ -19,8 +21,20 @@ static int _m_pop_count  = 0;
 // 框架
 //------------------------------------------------------------------------------
 
+// 返回版本
+int version()
+{
+    return 100;
+}
+
+// 返回版本字符串
+const char* version_string()
+{
+    return "minimgui v1.0";
+}
+
 // 初始化
-void init_gui()
+int init_gui()
 {
     m_ui_context.debugFlags = UI_FLAGS_NONE;
 
@@ -28,8 +42,7 @@ void init_gui()
     // 动态设置标题栏高度
     // m_ui_context.style.titleHeight = char_height("A") + m_ui_context.style.framePadding.y * 2.0f;
 
-    m_ui_context.screen   = uiVec2(1280.0f, 720.0f);
-    m_ui_context.clipRect = uiRect(uiVec2(), m_ui_context.screen);
+    m_ui_context.screen = uiVec2(1280.0f, 720.0f);
 
     m_ui_context.mouse   = uiVec2();
     m_ui_context.lastpos = uiVec2();
@@ -53,7 +66,7 @@ void init_gui()
 
     // 初始化主窗口
     m_ui_context.mainWindow.panelFlags = UI_PANEL_MENU;
-    m_ui_context.mainWindow.text       = _T("Root");
+    m_ui_context.mainWindow.text       = "Root";
 
     m_ui_context.layouts.reserve(32);
     m_ui_context.indent = 0;
@@ -61,6 +74,8 @@ void init_gui()
     // 菜单堆栈
     m_ui_context.openPath.reserve(64);
     m_ui_context.menuStack.reserve(64);
+
+    return 0;
 }
 
 // 关闭
@@ -222,9 +237,6 @@ bool begin_context(void* instance)
     m_ui_context.style.titleHeight = char_height() + m_ui_context.style.framePadding.y * 2.0f;
     m_ui_context.style.menuHeight  = char_height() + m_ui_context.style.framePadding.y * 2.0f;
 
-    // 重置缓存的剪裁矩形
-    m_ui_context.clipRect = uiRect(0.0f, 0.0f, m_ui_context.screen.x, m_ui_context.screen.y);
-
     // 悬停部件切换
     if (m_ui_context.lastHoveredWidget != m_ui_context.lastHoveredWidget) {
         m_ui_context.lastHoveredWidget = m_ui_context.lastHoveredWidget;
@@ -329,7 +341,7 @@ void end_context(void* instance)
     }
 
     if (_m_push_count != _m_pop_count) {
-        assert(false);
+        // assert(false);
     }
 
     // 结束界面环境
@@ -464,15 +476,36 @@ uiCommandList* foreground_cmdlist()
     return &m_ui_context.foregroundCmdList;
 }
 
+// 返回当前剪裁矩形
+uiRect clip_rect()
+{
+    if (m_ui_context.clipStack.empty()) {
+        return uiRect(uiVec2(), m_ui_context.screen);
+    }
+    return m_ui_context.clipStack.back();
+}
+
 // 压入剪裁区域
 void push_clip(float x, float y, float w, float h, bool intersect)
+{
+    push_clip(uiRect(x, y, w, h), intersect);
+}
+
+void push_clip(const uiRect& rect, bool intersect)
 {
     uiCommandList* cmdlist = window_cmdlist();
     if (!cmdlist) {
         return;
     }
 
-    cmdlist->push_clip(x, y, w, h, intersect);
+    cmdlist->push_clip(rect, intersect);
+
+    if (intersect) {
+        m_ui_context.clipStack.push_back(clip_rect() & rect);
+    }
+    else {
+        m_ui_context.clipStack.push_back(rect);
+    }
 }
 
 // 弹出剪裁区域
@@ -483,6 +516,9 @@ void pop_clip()
         return;
     }
     cmdlist->pop_clip();
+    if (!m_ui_context.clipStack.empty()) {
+        m_ui_context.clipStack.pop_back();
+    }
 }
 
 // 压入剪裁矩形
@@ -507,10 +543,7 @@ void push_clip(uiPanel* panel, bool intersect)
     }
     */
 
-    push_clip(rect.x, rect.y, rect.w, rect.h, intersect);
-
-    // 记录当前剪裁矩形
-    m_ui_context.clipRect = rect;
+    push_clip(rect, intersect);
 }
 
 // 弹出剪裁矩形
@@ -529,18 +562,20 @@ void pop_clip(uiPanel* panel)
     */
 
     // 还原缓存的剪裁矩形
+    /*
     if (m_ui_context.layouts.empty()) {
         m_ui_context.clipRect = uiRect(0, 0, m_ui_context.screen.x, m_ui_context.screen.y);
     }
     else {
         m_ui_context.clipRect = compute_clip_rect(m_ui_context.layouts.back().container);
     }
+    */
 }
 
 // 判断矩形是否在剪裁矩形内
 bool is_visible_clipbox(const uiRect& rect)
 {
-    return m_ui_context.clipRect.collision(rect);
+    return clip_rect().collision(rect);
 }
 
 // 判断控件是否在剪裁矩形内
@@ -686,19 +721,17 @@ uiFlags check_widget_mouse_event(uiWidget* widget, bool allowActive)
         return flags;
     }
 
-    /*
-    if (check_hover(widget)) {
+    if (check_flags(m_ui_context.debugFlags, UI_DEBUG_SHOW_WIDGET_BOUNDS) && check_hover(widget)) {
         uiCommandList* cmdlist = foreground_cmdlist();
         if (cmdlist) {
             cmdlist->set_stroke(colors::magenta, 1.0f); // 剪裁矩形
-            draw_check_rect(cmdlist, m_ui_context.clipRect.shrink(2.0f, 2.0f));
+            draw_check_rect(cmdlist, clip_rect().shrink(2.0f, 2.0f));
             cmdlist->set_stroke(colors::blue, 1.0f);    // 部件矩形
             cmdlist->draw_rect(widget->bounds.expand(2.0f, 2.0f));
             // cmdlist->set_text(colors::blue);
             // cmdlist->draw_string(widget->bounds.x, widget->bounds.y, widget->text);
         }
     }
-    //*/
 
     // 检查鼠标是否在当前剪裁区域 (error: 窗口的滚动条绘制的时候，剪裁区域还在上个窗口)
     // if (m_ui_context.clipRect.contains(m_ui_context.mouse) == false) { return flags; }
@@ -1371,12 +1404,12 @@ void set_clicked_widget(uiWidget* widget)
 
     bool isMenuItem = false;
 
-    wprintf(_T("click [%12ls: %12ls]"), widget->text.c_str(), widget_type_to_string(widget->type));
+    printf("click [%12s: %12s]", widget->text.c_str(), widget_type_to_string(widget->type));
     if (widget->parent) {
-        wprintf(_T("  parent: [%12ls: %12ls]"), widget->parent->text.c_str(), widget_type_to_string(widget->parent->type));
+        printf("  parent: [%12s: %12s]", widget->parent->text.c_str(), widget_type_to_string(widget->parent->type));
         isMenuItem = widget->parent->type == UI_WIDGET_MENU;
     }
-    wprintf(_T("\n"));
+    printf("\n");
 
     // 取消弹出部件
     if (isMenuItem == false && m_ui_context.popupWidget != widget->id) {

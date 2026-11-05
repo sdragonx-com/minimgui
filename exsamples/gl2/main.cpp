@@ -3,16 +3,15 @@
     #define _UNICODE
 #endif
 
-#include "graphics.h"
+#include "pch.h"
 
 // #include <codecvt>
 #include <windows.h>
 
-#include "minimgui/ui.h"
-#include "minimgui/ui_utils.h"
-#include "minimgui/ui_demo.h"
-#include "minimgui/backends/ui_impl_glfw.h"
-#include "minimgui/backends/ui_impl_gl2.h"
+#include <minimgui/ui.h>
+#include <minimgui/ui_demo.h>
+#include <minimgui/backends/ui_impl_glfw.h>
+#include <minimgui/backends/ui_impl_gl2.h>
 
 // utf8 to unicode
 inline std::wstring utf8_to_unicode(const char* str, size_t length)
@@ -35,8 +34,8 @@ bool show_demo_window    = false;
 bool show_another_window = false;
 vec4f clear_color        = vec4f(0.45f, 0.55f, 0.60f, 1.00f);
 
-GLuint texID = 0;    // 纹理
-bool useTex  = true; // 是否使用纹理
+GLuint g_image = 0;    // 纹理
+bool useTex    = true; // 是否使用纹理
 
 const wchar_t* TEXT_CN  = L"1234abcd中文字符";
 const wchar_t* TEXT_ABC = L"0123456789abcdefghijklmnABCDEFGHIJKLMN";
@@ -72,7 +71,7 @@ int main(int argc, char* argv[])
     minimgui::init_gl2(nullptr);
 
     // 加载纹理
-    texID = minimgui::load_image("background.jpg");
+    g_image = minimgui::load_image("background.jpg");
 
     // 创建字体
 
@@ -188,7 +187,7 @@ void keyboard_event(GLFWwindow* window, int key, int scancode, int action, int m
     }
     switch (key) {
     case GLFW_KEY_ESCAPE: // press esc to exit
-        glfwSetWindowShouldClose(window, 1);
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
         break;
 
     case GLFW_KEY_F1:
@@ -335,7 +334,7 @@ void display(GLFWwindow* window)
 
     // 绘制立方体
     if (useTex) {
-        glBindTexture(GL_TEXTURE_2D, texID);
+        glBindTexture(GL_TEXTURE_2D, g_image);
     }
     else {
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -361,66 +360,65 @@ void display(GLFWwindow* window)
     draw_imgui(window);
 }
 
-
 void show_sample_menus()
 {
     using namespace minimgui;
 
-    if (begin_menu(_T("File"))) {
-        if (begin_menu(_T("New"))) {
-            menu_item(_T("Text"));
-            menu_item(_T("Jpg"));
-            menu_item(_T("Png"));
+    if (begin_menu("File")) {
+        if (begin_menu("New")) {
+            menu_item("Text");
+            menu_item("Jpg");
+            menu_item("Png");
             end_menu();
         }
-        menu_item(_T("Open"));
-        menu_item(_T("Close"));
-        menu_item(_T("-"));
-        if (begin_menu(_T("Recent"))) {
-            menu_item(_T("1.txt"));
-            menu_item(_T("2.txt"));
-            menu_item(_T("3.txt"));
+        menu_item("Open");
+        menu_item("Close");
+        menu_item("-");
+        if (begin_menu("Recent")) {
+            menu_item("1.txt");
+            menu_item("2.txt");
+            menu_item("3.txt");
             end_menu();
         }
-        menu_item(_T("-"));
-        if (menu_item(_T("Exit"))) {
+        menu_item("-");
+        if (menu_item("Exit")) {
             glfwSetWindowShouldClose(glfwGetCurrentContext(), GLFW_TRUE);
         }
 
         end_menu();
     }
 
-    if (begin_menu(_T("Edit"))) {
-        menu_item(_T("Undo"));
-        menu_item(_T("Redo"));
-        menu_item(_T("-"));
-        menu_item(_T("Cut"));
-        menu_item(_T("Copy"));
-        menu_item(_T("Paste"));
-        menu_item(_T("Delete"));
-        menu_item(_T("-"));
+    if (begin_menu("Edit")) {
+        menu_item("Undo");
+        menu_item("Redo");
+        menu_item("-");
+        menu_item("Cut");
+        menu_item("Copy");
+        menu_item("Paste");
+        menu_item("Delete");
+        menu_item("-");
         end_menu();
     }
     /*
-    if (begin_menu(_T("Widget"))) {
+    if (begin_menu("Widget")) {
         static bool bValue  = true;
         static float fValue = 0.0f;
         static uiColor color = colors::white;
-        button(_T("button"));
-        checkbox(_T("check"), &bValue);
-        slider(_T("slider menu"), &fValue, 0.0f, 100.0f);
-        label(_T("Color"));
+        button("button");
+        checkbox("check"), &bValue);
+        slider("slider menu"), &fValue, 0.0f, 100.0f);
+        label("Color");
         // sameline();
         drag_color(color);
         end_menu();
     }
     */
-    if (begin_menu(_T("View"))) {
+    if (begin_menu("View")) {
         show_sample_menus(); // 这里 help 还没计算
         end_menu();
     }
-    if (begin_menu(_T("Help"))) {
-        menu_item(_T("About"));
+    if (begin_menu("Help")) {
+        menu_item("About");
         end_menu();
     }
 }
@@ -429,14 +427,44 @@ void show_menu()
 {
     using namespace minimgui;
 
-    if (begin_menu_bar(_T("MainMenu"))) {
+    if (begin_menu_bar("MainMenu")) {
         show_sample_menus();
 
         end_menu_bar();
     }
 }
 
+void show_image()
+{
+    using namespace minimgui;
 
+    if (begin_window("Image")) {
+        static uiVec2 imageSize = uiVec2(64.0f);
+        static uiVec2 size      = uiVec2(120.0f, 90.0f);
+
+        label("image size:");
+        slider("width", &imageSize.x, 0.0f, 512.0f);
+        slider("height", &imageSize.y, 0.0f, 512.0f);
+        label("size:");
+        slider("width", &size.x, 0.0f, 512.0f);
+        slider("height", &size.y, 0.0f, 512.0f);
+
+        static uiFlags align = UI_FLAGS_NONE;
+        checkbox("左", &align, UI_LEFT);
+        sameline();
+        checkbox("右", &align, UI_RIGHT);
+        sameline();
+        checkbox("上", &align, UI_TOP);
+        sameline();
+        checkbox("下", &align, UI_BOTTOM);
+        image("image", g_image, imageSize, size, align);
+
+        end_window();
+    }
+}
+
+float g_fontOffset = 0.5f;
+bool g_fontReset   = false;
 
 // 显示 imgui demo 界面
 void draw_imgui(GLFWwindow* window)
@@ -445,43 +473,40 @@ void draw_imgui(GLFWwindow* window)
 
     begin_context(window);
 
-    static bool bChecked = true;
-    static float fSlider = 10.0f;
-    static int iDrag     = 10;
-    static float fDrag   = 10.0f;
-
-    static float fSize      = 128.0f;
+    static bool bFill       = true;
+    static float fSize      = 100.0f;
     static float fThickness = 10.0f;
-    static bool fFillMode   = true;
 
-    if (begin_window(_T("design"), vec2f(814.0f, 412.0f), vec2f(400, 300.0f))) {
+    // show_menu();
+
+    //*
+    if (begin_window("design", nullptr, uiVec2(814.0f, 412.0f), uiVec2(400.0f, 300.0f))) {
         show_menu();
 
-        checkbox(_T("check"), &bChecked);
-        slider(_T("slider"), &fSlider, 0.0f, 100.0f);
-        drag_int(-1.0f, &iDrag, -100, 100);
-        drag_float(-1.0f, &fDrag, -100.0f, 100.0f);
+        checkbox("fill", &bFill);
+        slider("size", &fSize, 0.0f, 500.0f);
+        slider("thickness", &fThickness, 0.0f, 100.0f);
+        if (slider("font", &g_fontOffset, 0.0f, 10.0f)) {
+            g_fontReset = true;
+        }
 
-        slider(_T("size"), &fSize, 0.0f, 500.0f);
-        slider(_T("thickness"), &fThickness, 0.0f, 100.0f);
-        checkbox(_T("fill"), &fFillMode);
-
-        if (begin_combo(_T("combobox"))) {
+        if (begin_combo("combobox")) {
             static int id = -1;
             for (int i = 0; i < 10; ++i) {
-                if (selectable(format(_T("select %d"), i), id == i, vec2f(-1.0f, 0.0f))) {
+                if (selectable(format("select %d", i), id == i, uiVec2(-1.0f, 0.0f))) {
                     id = i;
                 }
             }
             end_combo();
         }
 
-        separator(_T("buttons"));
-        if (collapsible_panel(_T("Buttons"), UI_FLAGS_OPEN)) {
+
+        separator("buttons");
+        if (collapsible_panel("Buttons", UI_FLAGS_OPEN)) {
             for (int i = 0; i < 10; ++i) {
-                label(_T("label %d:"), i);
+                label("label %d:", i);
                 sameline();
-                if (button(format(_T("button %d"), i), vec2f(0.0f))) {
+                if (button(format("button %d", i), uiVec2(0.0f))) {
                     printf("click %d\n", i);
                 }
             }
@@ -490,38 +515,29 @@ void draw_imgui(GLFWwindow* window)
         end_window();
     }
 
-    if (begin_window(_T("Image"))) {
-        static uiVec2 imageSize = uiVec2(64.0f);
-        static uiVec2 size      = uiVec2(120.0f, 90.0f);
-
-        label(_T("image size:"));
-        slider(_T("width"), &imageSize.x, 0.0f, 512.0f);
-        slider(_T("height"), &imageSize.y, 0.0f, 512.0f);
-        label(_T("size:"));
-        slider(_T("width"), &size.x, 0.0f, 512.0f);
-        slider(_T("height"), &size.y, 0.0f, 512.0f);
-
-        static uiFlags align = UI_FLAGS_NONE;
-        checkbox(_T("左"), &align, UI_LEFT);
-        sameline();
-        checkbox(_T("右"), &align, UI_RIGHT);
-        sameline();
-        checkbox(_T("上"), &align, UI_TOP);
-        sameline();
-        checkbox(_T("下"), &align, UI_BOTTOM);
-        image(_T("image"), texID, imageSize, size, align);
-
-        end_window();
-    }
-
-    foreground_cmdlist()->draw_rect(400, 420, fSize, fSize);
+    // foreground_cmdlist()->draw_rect(400, 420, fSize, fSize);
     // draw_close_icon(foreground_cmdlist(), 400, 420, fSize, fThickness);
-    draw_collapse_icon(foreground_cmdlist(), 400, 420, fSize, fThickness, bChecked);
+    // draw_collapse_icon(foreground_cmdlist(), 400, 420, fSize, fThickness, bChecked);
 
-    glPolygonMode(GL_FRONT, fFillMode ? GL_FILL : GL_LINE);
+    glPolygonMode(GL_FRONT, bFill ? GL_FILL : GL_LINE);
 
     // 显示演示窗口
-    show_demo();
+    try {
+        show_demo();
+    }
+    catch (const std::exception& e) {
+        // 打印异常类型和内容
+        printf("Catch exception: %s\n", e.what());
+
+        // 如果你在 Windows 下用 Qt，用 qDebug() 甚至能直接弹窗或者输出到控制台
+        // qDebug() << "Exception:" << e.what();
+
+        __debugbreak(); // 直接触发断点，这时候看调用栈！
+    }
+    catch (...) {
+        printf("Unknown exception!\n");
+        __debugbreak();
+    }
 
     end_context(window);
     render(window);

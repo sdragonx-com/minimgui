@@ -5,6 +5,9 @@
 #define PROPID ULONG
 #endif
 
+using std::min;
+using std::max;
+
 #include <gdiplus.h>
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
@@ -13,36 +16,12 @@
 
 namespace minimgui {
 
-#if defined(UI_USE_UTF8)
-const UINT CODE_PAGE = CP_UTF8;
-#else
-const UINT CODE_PAGE = CP_ACP;
-#endif
-
 static HDC _m_hdc     = nullptr;
 static HFONT _m_hFont = nullptr;
 
 #define TO_RECT(x, y, w, h) (int) x, (int) y, (int) (x + w), (int) (y + h)
 
 //------------------------------------------------------------------------------
-
-// 转 UNICODE 字符串
-std::wstring to_wstring(const char* str, int length)
-{
-    int wlen = MultiByteToWideChar(CODE_PAGE, 0, str, length, NULL, 0);
-    if (wlen <= 0)
-        return 0;
-
-    std::wstring wstr(wlen, 0);
-    MultiByteToWideChar(CODE_PAGE, 0, str, length, &wstr[0], wlen);
-
-    return wstr;
-}
-
-std::wstring to_wstring(const std::string& str)
-{
-    return to_wstring(str.c_str(), str.length());
-}
 
 static COLORREF toCOLORREF(const uiColor& color)
 {
@@ -190,6 +169,8 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
     HFONT hFont    = _m_hFont;
     HFONT hOldFont = (HFONT) SelectObject(hdc, hFont);
 
+    std::wstring wstr;
+
     const uiVec2* points = cmdlist.point_data();
     for (size_t cmdID = 0; cmdID < cmdlist.command_count(); ++cmdID) {
         const uiCommandList::command& cmd = cmdlist.commands(cmdID);
@@ -255,7 +236,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
                 RoundRect(
                     hdc,
                     TO_RECT(points[i - 2].x, points[i - 2].y, points[i - 1].x, points[i - 1].y),
-                    points[i - 0].x, points[i - 0].y
+                    (int) points[i - 0].x, (int) points[i - 0].y
                 );
             }
             break;
@@ -267,7 +248,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
                 RoundRect(
                     hdc,
                     TO_RECT(points[i - 2].x, points[i - 2].y, points[i - 1].x, points[i - 1].y),
-                    points[i - 0].x, points[i - 0].y
+                    (int) points[i - 0].x, (int) points[i - 0].y
                 );
             }
             break;
@@ -318,15 +299,21 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             points = cmdlist.point_data() + cmd.geom.index;
             fill_polygon(hdc, points, cmd.geom.count);
             break;
-        case uiCommandList::STRING:
-            points = cmdlist.point_data() + cmd.text.index;
-            {
-                SetTextColor(hdc, cmd.text.color);
+        case uiCommandList::STRING: // 绘制字符串
+        {
+            const uiString& str = cmdlist.strings(cmd.text.string);
+            points              = cmdlist.point_data() + cmd.text.index;
 
-                const uiString& str = cmdlist.strings(cmd.text.string);
-                TextOutW(hdc, (int) points->x, (int) points->y, str.c_str(), str.length());
-            }
+            #if defined(MINIMGUI_UTF8_ENCODING)
+            utf8_to_unicode(wstr, str.c_str(), str.length());
+            #else
+            ansi_to_unicode(wstr, str.c_str(), str.length());
+            #endif
+
+            TextOutW(hdc, (int) points->x, (int) points->y, wstr.c_str(), (int) wstr.length());
+
             break;
+        }
         case uiCommandList::IMAGE:
             points = cmdlist.point_data() + cmd.image.index;
             {
@@ -425,12 +412,17 @@ float text_width(const char* str, size_t length)
 {
     if (length == SIZE_MAX)
         length = strlen(str);
+    std::wstring wstr;
+    #if defined(MINIMGUI_UTF8_ENCODING)
+    utf8_to_unicode(wstr, str, length);
+    #else
+    ansi_to_unicode(wstr, str, length);
+    #endif
     SIZE size;
-    std::wstring wstr = to_wstring(str, length);
-    if (GetTextExtentPoint32W(_m_hdc, wstr.c_str(), wstr.length(), &size)) {
+    if (GetTextExtentPoint32W(_m_hdc, wstr.c_str(), (int) wstr.length(), &size)) {
         return static_cast<float>(size.cx);
     }
-    return 0;
+    return 0.0f;
 }
 
 float text_width(const wchar_t* str, size_t length)
@@ -438,10 +430,10 @@ float text_width(const wchar_t* str, size_t length)
     if (length == SIZE_MAX)
         length = wcslen(str);
     SIZE size;
-    if (GetTextExtentPoint32W(_m_hdc, str, length, &size)) {
+    if (GetTextExtentPoint32W(_m_hdc, str, (int) length, &size)) {
         return static_cast<float>(size.cx);
     }
-    return 0;
+    return 0.0f;
 }
 
 #if 0
@@ -540,7 +532,12 @@ uiHandle load_image(const char* filename)
         return 0;
     }
 
-    std::wstring wstr = to_wstring(filename, strlen(filename));
+    std::wstring wstr;
+    #if defined(MINIMGUI_UTF8_ENCODING)
+    utf8_to_unicode(wstr, filename, strlen(filename));
+    #else
+    ansi_to_unicode(wstr, filename, strlen(filename));
+    #endif
     return load_image(wstr.c_str());
 }
 

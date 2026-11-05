@@ -1,6 +1,7 @@
 ﻿#include "ui_widgets.h"
 #include "ui_user.h"
 
+#include <stdio.h>
 #include <algorithm>
 #include <stdarg.h>
 
@@ -20,32 +21,32 @@ uiWindow* current_window()
 */
 
 // 返回部件类型名称
-const uiChar* widget_type_to_string(uiWidgetType type)
+const char* widget_type_to_string(uiWidgetType type)
 {
     switch (type) {
-    case UI_WIDGET_WINDOW: return _T("Window");           // 窗口 (uiWindow)
-    case UI_WIDGET_PANEL: return _T("Panel");             // 面板 (uiPanel)
+    case UI_WIDGET_WINDOW: return "Window";           // 窗口 (uiWindow)
+    case UI_WIDGET_PANEL: return "Panel";             // 面板 (uiPanel)
 
-    case UI_WIDGET_MENUBAR: return _T("MenuBar");         // 菜单栏 (uiPanel)
-    case UI_WIDGET_MENU: return _T("Menu");               // 菜单 (uiWindow)
-    case UI_WIDGET_STATUSBAR: return _T("StatusBar");     // 状态栏
-    case UI_WIDGET_TOOLBAR: return _T("ToolBar");         // 工具栏
-    case UI_WIDGET_COLLAPSIBLE: return _T("Collapsible"); // 折叠面板
+    case UI_WIDGET_MENUBAR: return "MenuBar";         // 菜单栏 (uiPanel)
+    case UI_WIDGET_MENU: return "Menu";               // 菜单 (uiWindow)
+    case UI_WIDGET_STATUSBAR: return "StatusBar";     // 状态栏
+    case UI_WIDGET_TOOLBAR: return "ToolBar";         // 工具栏
+    case UI_WIDGET_COLLAPSIBLE: return "Collapsible"; // 折叠面板
 
-    case UI_WIDGET_BUTTON: return _T("Button");           // 按钮
-    case UI_WIDGET_COLOR: return _T("Color");             // 颜色框
-    case UI_WIDGET_CHECKBOX: return _T("Check");          // 选择框
-    case UI_WIDGET_DRAG_NUMBER: return _T("DragNum");     // 拖拽数字
-    case UI_WIDGET_EDIT: return _T("Edit");               // 单行编辑框
-    case UI_WIDGET_IMAGE: return _T("Image");             // 图片框
-    case UI_WIDGET_LABEL: return _T("Label");             // 文本框
-    case UI_WIDGET_MENU_ITEM: return _T("MenuItem");      // 菜单项
-    case UI_WIDGET_SCROLL: return _T("Scroll");           // 滚动条
-    case UI_WIDGET_SLIDER: return _T("Slider");           // 滑块
-    case UI_WIDGET_TREENODE: return _T("TreeNode");       // 树节点
+    case UI_WIDGET_BUTTON: return "Button";           // 按钮
+    case UI_WIDGET_COLOR: return "Color";             // 颜色框
+    case UI_WIDGET_CHECKBOX: return "Check";          // 选择框
+    case UI_WIDGET_DRAG_NUMBER: return "DragNum";     // 拖拽数字
+    case UI_WIDGET_EDIT: return "Edit";               // 单行编辑框
+    case UI_WIDGET_IMAGE: return "Image";             // 图片框
+    case UI_WIDGET_LABEL: return "Label";             // 文本框
+    case UI_WIDGET_MENU_ITEM: return "MenuItem";      // 菜单项
+    case UI_WIDGET_SCROLL: return "Scroll";           // 滚动条
+    case UI_WIDGET_SLIDER: return "Slider";           // 滑块
+    case UI_WIDGET_TREENODE: return "TreeNode";       // 树节点
 
-    case UI_WIDGET_CUSTOM: return _T("Custom");           // 自定义
-    default: return _T("Unknown");
+    case UI_WIDGET_CUSTOM: return "Custom";           // 自定义
+    default: return "Unknown";
     }
 }
 
@@ -66,7 +67,7 @@ uiFlags& pick_cache_flags(uiID id, uiFlags init)
 //------------------------------------------------------------------------------
 
 // 开始窗口
-bool begin_window(const uiChar* text, bool* isOpen, uiVec2 pos, uiVec2 size, uiFlags panelFlags)
+bool begin_window(const char* text, bool* isOpen, uiVec2 pos, uiVec2 size, uiFlags panelFlags)
 {
     if (isOpen && !*isOpen) {
         return false;
@@ -102,18 +103,13 @@ bool begin_window(const uiChar* text, bool* isOpen, uiVec2 pos, uiVec2 size, uiF
     return true;
 }
 
-bool begin_window(const uiChar* text, uiVec2 pos, uiVec2 size, uiFlags panelFlags)
-{
-    return begin_window(text, nullptr, pos, size, panelFlags);
-}
-
 // 结束窗口
 void end_window()
 {
     // 获取当前布局容器
     uiPanel* panel = layout()->container;
 
-    if (panel->text == _T("design")) {
+    if (panel->text == "design") {
         // printf("design\n");
     }
 
@@ -149,7 +145,7 @@ void end_window()
 //------------------------------------------------------------------------------
 
 // 开始弹出窗口
-bool begin_popup(const uiChar* text, uiVec2 pos, uiVec2 size)
+bool begin_popup(const uiString& text, uiVec2 pos, uiVec2 size)
 {
     uiWindow* window = find_window(text);
 
@@ -191,7 +187,7 @@ void end_popup()
 // 子窗口，面板对象
 
 // 开始子窗口
-bool begin_child(const uiChar* text, uiFlags panelFlags)
+bool begin_child(const char* text, uiFlags panelFlags)
 {
     uiPanel* parent = layout()->container;
 
@@ -239,7 +235,7 @@ bool begin_child(const uiChar* text, uiFlags panelFlags)
         }
 
         // 绘制滚动条
-        vscroll(format(_T("%p.vscroll"), panel), rect, &panel->scroll.y, 0.0f, scrollMax);
+        vscroll(format("%p.vscroll", panel), rect, &panel->scroll.y, 0.0f, scrollMax);
     }
 
     // 剪裁客户区矩形
@@ -265,7 +261,7 @@ const float MENU_ITEM_MIN_WIDTH = 160.0f;
 const uiID MENU_HASH_MAGIC = 0x4D454E554D454E55ull;
 
 // 开始菜单窗口
-bool begin_menu_window(const uiChar* text, uiID id, uiWidget* widget, bool isMenubar)
+bool begin_menu_window(const uiString& text, uiID id, uiWidget* widget, bool isMenubar)
 {
     uiWindow* window = find_window_by_id(id);
 
@@ -280,7 +276,7 @@ bool begin_menu_window(const uiChar* text, uiID id, uiWidget* widget, bool isMen
     set_flags_enabled(window->flags, UI_FLAGS_DISABLED, false);
     bring_to_front(window);
 
-    printf("%f\n", window->popupSize.w);
+    // printf("%f\n", window->popupSize.w);
 
     // 取上一帧的统计的尺寸大小
     uiVec2 size    = uiVec2(window->popupSize.w, window->popupSize.h);
@@ -323,7 +319,7 @@ void end_menu_window()
 }
 
 // 开始菜单栏
-bool begin_menu_bar(const uiChar* text)
+bool begin_menu_bar(const char* text)
 {
     uiContext* ctx = context();
 
@@ -382,15 +378,15 @@ void end_menu_bar()
 }
 
 // 菜单栏主菜单项
-static bool begin_main_menu(const uiChar* text)
+static bool begin_main_menu(const uiString& text)
 {
     uiContext* ctx = context();
 
-    uiString title = layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? _T(".") : _T(".menu.")) + text;
+    uiString title = layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? "." : ".menu.") + text;
     uiID id        = ui_hash(title) ^ MENU_HASH_MAGIC;
 
     // 计算布局大小
-    float cx    = text_width(text, _tcslen(text)) + style()->framePadding.x * 4.0f;
+    float cx    = text_width(text.c_str(), text.length()) + style()->framePadding.x * 4.0f;
     float cy    = style()->menuHeight;
     uiRect rect = allocate_widget_rect(cx, cy);
 
@@ -454,11 +450,11 @@ static void end_main_menu()
 }
 
 // 子菜单菜单项
-static bool begin_sub_menu(const uiChar* text)
+static bool begin_sub_menu(const uiString& text)
 {
     uiContext* ctx = context();
 
-    uiString title = layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? _T(".") : _T(".menu.")) + text;
+    uiString title = layout()->owner->text + (layout()->owner->type == UI_WIDGET_MENU ? "." : ".menu.") + text;
     const uiID id  = ui_hash(title) ^ MENU_HASH_MAGIC;
 
     // 计算布局大小
@@ -510,7 +506,7 @@ static void end_sub_menu()
 }
 
 // 菜单开始
-bool begin_menu(const uiChar* text)
+bool begin_menu(const char* text)
 {
     uiContext* ctx = context();
 
@@ -546,10 +542,10 @@ void end_menu()
 }
 
 // 菜单项
-bool menu_item(const uiChar* text)
+bool menu_item(const char* text)
 {
     // 分隔符
-    if (_tcscmp(text, _T("-")) == 0) {
+    if (strncmp(text, "-", 1) == 0) {
         separator();
         return false;
     }
@@ -585,7 +581,7 @@ bool menu_item(const uiChar* text)
 //------------------------------------------------------------------------------
 
 // 折叠面板
-bool collapsible_panel(const uiChar* text, uiFlags panelFlags)
+bool collapsible_panel(const char* text, uiFlags panelFlags)
 {
     uiWidget widget(UI_WIDGET_COLLAPSIBLE, text, 0, layout()->container);
 
@@ -620,13 +616,13 @@ bool collapsible_panel(const uiChar* text, uiFlags panelFlags)
 //------------------------------------------------------------------------------
 // 标签页
 
-static void label_widget(const uiChar* text, float width = -10.0f)
+static void label_widget(const char* text, float width = -10.0f)
 {
     uiWidget widget(UI_WIDGET_LABEL, text, 0);
 
     float cx = width;
     if (cx < -1.0f) {
-        cx = text_width(text, _tcslen(text)) + style()->framePadding.x * 2.0f;
+        cx = text_width(text, strlen(text)) + style()->framePadding.x * 2.0f;
     }
 
     float cy      = char_height() + style()->framePadding.y * 2.0f;
@@ -637,17 +633,15 @@ static void label_widget(const uiChar* text, float width = -10.0f)
     }
 }
 
-// 标签页
-void label_va(float width, const uiChar* param, va_list body)
+void label_va(float width, const char* param, va_list body)
 {
-    static uiChar buf[256] = { 0 };
-
-    _vsntprintf(buf, countof(buf), param, body);
-
+    static char buf[256] = { 0 };
+    vsnprintf(buf, countof(buf), param, body);
     label_widget(buf, width);
 }
 
-void label(const uiChar* param, ...)
+// 标签页
+void label(const char* param, ...)
 {
     va_list body;
     va_start(body, param);
@@ -656,7 +650,7 @@ void label(const uiChar* param, ...)
 }
 
 // 固定宽度标签页
-void label(float width, const uiChar* param, ...)
+void label(float width, const char* param, ...)
 {
     va_list body;
     va_start(body, param);
@@ -667,11 +661,11 @@ void label(float width, const uiChar* param, ...)
 //------------------------------------------------------------------------------
 
 // 按钮
-bool button(const uiChar* text, uiVec2 size)
+bool button(const char* text, uiVec2 size)
 {
     uiWidget widget(UI_WIDGET_BUTTON, text, 0, layout()->container);
 
-    float cx      = is_zero(size.x) ? text_width(text, _tcslen(text)) + style()->framePadding.x * 4.0f : size.x;
+    float cx      = is_zero(size.x) ? text_width(text, strlen(text)) + style()->framePadding.x * 4.0f : size.x;
     float cy      = is_zero(size.y) ? char_height() + style()->framePadding.y * 2.0f : size.y;
     widget.bounds = allocate_widget_rect(cx, cy);
 
@@ -701,11 +695,11 @@ void color_box(uiColor color, float width)
 }
 
 // 单选框，ID 生成使用变量地址
-bool checkbox(const uiChar* text, bool* checked)
+bool checkbox(const char* text, bool* checked)
 {
     uiWidget widget(UI_WIDGET_CHECKBOX, text, ui_hash(&checked, sizeof(void*)), layout()->container);
 
-    float cx      = text_width(text, _tcslen(text)) + style()->framePadding.x * 2.0f;
+    float cx      = text_width(text, strlen(text)) + style()->framePadding.x * 2.0f;
     float cy      = char_height() + style()->framePadding.y * 2.0f;
     widget.bounds = allocate_widget_rect(cy + 4.0f + cx, cy);
 
@@ -729,7 +723,7 @@ bool checkbox(const uiChar* text, bool* checked)
 }
 
 // 标志选择框
-bool checkbox(const uiChar* text, uint32_t* flags, uint32_t flag)
+bool checkbox(const char* text, uint32_t* flags, uint32_t flag)
 {
     struct
     {
@@ -739,7 +733,7 @@ bool checkbox(const uiChar* text, uint32_t* flags, uint32_t flag)
 
     uiWidget widget(UI_WIDGET_CHECKBOX, text, ui_hash(&idSource, sizeof(idSource)), layout()->container);
 
-    float cx      = text_width(text, _tcslen(text)) + style()->framePadding.x * 2.0f;
+    float cx      = text_width(text, strlen(text)) + style()->framePadding.x * 2.0f;
     float cy      = char_height() + style()->framePadding.y * 2.0f;
     widget.bounds = allocate_widget_rect(cy + 4.0f + cx, cy);
 
@@ -763,7 +757,7 @@ bool checkbox(const uiChar* text, uint32_t* flags, uint32_t flag)
 }
 
 // 图片框
-bool image(const uiChar* text, uiHandle id, uiVec2 imageSize, uiVec2 size, uiFlags align)
+bool image(const char* text, uiHandle id, uiVec2 imageSize, uiVec2 size, uiFlags align)
 {
     uiWidget widget(UI_WIDGET_IMAGE, text, 0, layout()->container);
 
@@ -784,12 +778,14 @@ bool image(const uiChar* text, uiHandle id, uiVec2 imageSize, uiVec2 size, uiFla
     return clicked;
 }
 
+//------------------------------------------------------------------------------
+
 // 可选择按钮
-bool selectable(const uiChar* text, bool selected, uiVec2 size)
+bool selectable(const char* text, bool selected, uiVec2 size)
 {
     uiWidget widget(UI_WIDGET_BUTTON, text, 0, layout()->container);
 
-    float cx      = is_zero(size.x) ? text_width(text, _tcslen(text)) + style()->framePadding.x : size.x;
+    float cx      = is_zero(size.x) ? text_width(text, strlen(text)) + style()->framePadding.x : size.x;
     float cy      = is_zero(size.y) ? char_height() + style()->framePadding.y : size.y;
     widget.bounds = allocate_widget_rect(cx, cy);
 
@@ -813,22 +809,22 @@ bool selectable(const uiChar* text, bool selected, uiVec2 size)
 //------------------------------------------------------------------------------
 
 // 分隔符
-void separator(const uiChar* text)
+void separator(const char* text)
 {
     // 分隔符高度
-    const float cy    = text == nullptr ? char_height() * 0.5f : char_height();
+    const float cy    = text ? char_height() : char_height() * 0.5f;
     const uiRect rect = allocate_widget_rect(-1.0f, cy);
 
     // 绘制
-    if (is_visible_clipbox(rect)) {
-        draw_separator(window_cmdlist(), rect, text ? text : uiString());
+    if (text && is_visible_clipbox(rect)) {
+        draw_separator(window_cmdlist(), rect, text);
     }
 }
 
 //------------------------------------------------------------------------------
 
 // 滑块，ID 生成使用变量地址
-bool slider(const uiChar* text, float* value, float min, float max)
+bool slider(const char* text, float* value, float min, float max)
 {
     uiWidget widget(UI_WIDGET_SLIDER, text, ui_hash(&value, sizeof(void*)), layout()->container);
 
@@ -881,7 +877,7 @@ static float compute_scroll_slider_size(
 }
 
 // 横向滚动条
-bool hscroll(const uiChar* text, const uiRect& rect, float* value, float min, float max)
+bool hscroll(const char* text, const uiRect& rect, float* value, float min, float max)
 {
     uiWidget widget(UI_WIDGET_SCROLL, text, 0, layout()->container);
     widget.bounds = rect;
@@ -924,7 +920,7 @@ bool hscroll(const uiChar* text, const uiRect& rect, float* value, float min, fl
 }
 
 // 竖向滚动条
-bool vscroll(const uiChar* text, const uiRect& rect, float* value, float min, float max)
+bool vscroll(const char* text, const uiRect& rect, float* value, float min, float max)
 {
     uiWidget widget(UI_WIDGET_SCROLL, text, 0, layout()->container);
     widget.bounds = rect;
@@ -937,7 +933,7 @@ bool vscroll(const uiChar* text, const uiRect& rect, float* value, float min, fl
     check_widget_mouse_event(&widget);
 
     if (is_hovered(&widget)) {
-        wprintf(_T("container: %ls\n"), layout()->container->text.c_str());
+        // wprintf(_T("container: %ls\n"), layout()->container->text.c_str());
     }
 
     // 计算当前滑块位置
@@ -974,12 +970,12 @@ bool vscroll(const uiChar* text, const uiRect& rect, float* value, float min, fl
     return changed;
 }
 
-bool hscroll(const uiChar* text, float* value, float min, float max)
+bool hscroll(const char* text, float* value, float min, float max)
 {
     return hscroll(text, allocate_widget_rect(-1.0f, style()->scrollWidth), value, min, max);
 }
 
-bool vscroll(const uiChar* text, float* value, float min, float max)
+bool vscroll(const char* text, float* value, float min, float max)
 {
     return vscroll(text, allocate_widget_rect(style()->scrollWidth, -1.0f), value, min, max);
 }
@@ -987,7 +983,7 @@ bool vscroll(const uiChar* text, float* value, float min, float max)
 //------------------------------------------------------------------------------
 
 // 开始列表框
-bool begin_list(const uiChar* text)
+bool begin_list(const char* text)
 {
     return begin_child(text, UI_PANEL_SCROLL | UI_PANEL_BORDER);
 }
@@ -1001,14 +997,14 @@ void end_list()
 //------------------------------------------------------------------------------
 
 // 开始组合框
-bool begin_combo(const uiChar* text)
+bool begin_combo(const char* text)
 {
     uiWidget widget(UI_WIDGET_BUTTON, text, 0);
 
     float width = -1.0f;
     float cx    = width;
     if (cx < -1.0f) {
-        cx = text_width(text, _tcslen(text)) + style()->framePadding.x * 2.0f;
+        cx = text_width(text, strlen(text)) + style()->framePadding.x * 2.0f;
     }
 
     float cy      = char_height() + style()->framePadding.y * 2.0f;
@@ -1037,9 +1033,9 @@ bool begin_combo(const uiChar* text)
     if (opened) {
         context()->popupWidget = widget.id;
         begin_popup(
-            L"combo.listbox",
+            "combo.listbox",
             uiVec2(widget.bounds.x, widget.bounds.y + widget.bounds.h + 2.0f),
-            uiVec2(widget.bounds.w, 200)
+            uiVec2(widget.bounds.w, 200.0f)
         );
     }
     else {
@@ -1058,12 +1054,12 @@ void end_combo()
 //------------------------------------------------------------------------------
 
 // 树节点
-bool treenode(const uiChar* text, uiFlags nodeFlags)
+bool treenode(const char* text, uiFlags nodeFlags)
 {
     uiWidget widget(UI_WIDGET_TREENODE, text, 0, layout()->container);
 
     float cy      = char_height() + style()->framePadding.y * 2.0f;
-    float cx      = -1.0f; // text_width(text, _tcslen(text)) + style()->framePadding.x * 2.0f + cy + 4.0f;
+    float cx      = -1.0f; // text_width(text, strlen(text)) + style()->framePadding.x * 2.0f + cy + 4.0f;
     widget.bounds = allocate_widget_rect(cx, cy);
 
     // 获取缓存的状态
@@ -1093,12 +1089,12 @@ bool treenode(const uiChar* text, uiFlags nodeFlags)
 }
 
 // 自定义颜色的树节点
-bool treenode(const uiChar* text, uiColor color, uiFlags nodeFlags)
+bool treenode(const char* text, uiColor color, uiFlags nodeFlags)
 {
     uiWidget widget(UI_WIDGET_TREENODE, text, 0, layout()->container);
 
     float cy      = char_height() + style()->framePadding.y * 2.0f;
-    float cx      = -1.0f; // text_width(text, _tcslen(text)) + style()->framePadding.x * 2.0f + cy + 4.0f;
+    float cx      = -1.0f; // text_width(text, strlen(text)) + style()->framePadding.x * 2.0f + cy + 4.0f;
     widget.bounds = allocate_widget_rect(cx, cy);
 
     // 获取缓存的状态
@@ -1161,7 +1157,7 @@ bool drag_int(float width, T* value, int min, int max)
     }
 
     // 绘制
-    widget.text = format(_T("%d"), (int) *value);
+    widget.text = format("%d", (int) *value);
     draw_label(
         window_cmdlist(), &widget, UI_CENTER,
         select_text_foreground(hovered, false),
@@ -1204,7 +1200,7 @@ bool drag_float(float width, float* value, float min, float max)
     }
 
     // 绘制
-    widget.text = format(_T("%0.2f"), *value);
+    widget.text = format("%0.2f", *value);
     draw_label(
         window_cmdlist(), &widget, UI_CENTER,
         select_text_foreground(hovered, false),
@@ -1262,7 +1258,7 @@ bool drag_color(uiColor& color, float width)
 }
 
 // 测试无窗口部件
-bool custom_test(const uiChar* text, float x, float y, float w, float h)
+bool custom_test(const char* text, float x, float y, float w, float h)
 {
     uiWidget widget(UI_WIDGET_SLIDER, text, 0);
 

@@ -1,5 +1,6 @@
 ﻿#include "ui_demo.h"
 #include "ui_widgets.h"
+#include "ui_user.h"
 
 namespace minimgui {
 
@@ -17,31 +18,58 @@ void show_debug(bool* isOpen)
 {
     const uiContext* ctx = context();
 
-    if (begin_window(_T("Debug"), isOpen, uiVec2(4.0f, 4.0f), uiVec2(300.0f, 720.0f))) {
-        if (collapsible_panel(_T("Infomations"), UI_FLAGS_OPEN)) {
-            label(_T("屏幕: %0.2f, %0.2f"), ctx->screen.x, ctx->screen.y);
-            label(_T("鼠标: %0.2f, %0.2f %s"), ctx->mouse.x, ctx->mouse.y, ctx->clicked ? _T("B") : _T(""));
-            label(_T("移动: %0.2f, %0.2f"), ctx->delta.x, ctx->delta.y);
+    if (begin_window("Debug", isOpen, uiVec2(4.0f, 4.0f), uiVec2(300.0f, 720.0f))) {
+        /*
+        if (begin_menu_bar("debug.mainmenu")) {
 
-            label(_T("悬停窗口: %llu"), ctx->hoveredWindow);
-            label(_T("激活窗口: %llu"), ctx->activedWindow);
-            label(_T("焦点窗口: %llu"), ctx->focusWindow);
 
-            label(_T("悬停部件: %llu"), ctx->hoveredWidget);
-            // label(_T("lasthot: %llu"), ctx->lastHoveredWidget);
-            label(_T("点击部件: %llu"), ctx->clickedWidget);
+            end_menu_bar();
+        }
+        */
+
+        if (collapsible_panel("Infomations", UI_FLAGS_OPEN)) {
+            uiString str;
+
+            label("屏幕: %0.2f, %0.2f", ctx->screen.x, ctx->screen.y);
+            label("鼠标: %0.2f, %0.2f %s", ctx->mouse.x, ctx->mouse.y, ctx->clicked ? "B" : "");
+            label("移动: %0.2f, %0.2f", ctx->delta.x, ctx->delta.y);
+
+            // modifier
+            str.clear();
+            if (key_state(UI_KEY_CONTROL)) {
+                str += "ctrl ";
+            }
+            if (key_state(UI_KEY_SHIFT)) {
+                str += "shift ";
+            }
+            if (key_state(UI_KEY_ALT)) {
+                str += "alt";
+            }
+            label("修饰键: %s", str.c_str());
+
+            label("悬停窗口: %llu", ctx->hoveredWindow);
+            label("激活窗口: %llu", ctx->activedWindow);
+            label("焦点窗口: %llu", ctx->focusWindow);
+
+            label("悬停部件: %llu", ctx->hoveredWidget);
+            // label("lasthot: %llu", ctx->lastHoveredWidget);
+            label("点击部件: %llu", ctx->clickedWidget);
         }
 
-        if (collapsible_panel(_T("Windows"), UI_FLAGS_OPEN)) {
+        if (collapsible_panel("Debug Flags", UI_FLAGS_OPEN)) {
+            checkbox("display widget bounds", &context()->debugFlags, UI_DEBUG_SHOW_WIDGET_BOUNDS);
+        }
+
+        if (collapsible_panel("Windows", UI_FLAGS_OPEN)) {
             if (!ctx->windows.empty()) {
                 for (size_t i = ctx->windows.size() - 1; i < ctx->windows.size(); --i) {
                     uiWindow* w = ctx->windows[i];
-                    // if (w->text == _T("Debug")) { continue; }
+                    // if (w->text == "Debug")) { continue; }
                     bool disabled = check_flags(w->flags, UI_FLAGS_DISABLED);
                     if (treenode(w->text.c_str(), disabled ? colors::gray : colors::black)) { // UI_FLAGS_OPEN
-                        label(_T("%s - [%llu]\n"), w->text.c_str(), w->id);
-                        label(_T("rect: [%0.2f, %0.2f, %0.2f, %0.2f]"), w->bounds.x, w->bounds.y, w->bounds.w, w->bounds.h);
-                        label(_T("scroll: %0.2f/%0.2f, %0.2f/%0.2f\n"), w->scroll.x, w->scrollMax.x, w->scroll.y, w->scrollMax.y);
+                        label("%s - [%llu]\n", w->text.c_str(), w->id);
+                        label("rect: [%0.2f, %0.2f, %0.2f, %0.2f]", w->bounds.x, w->bounds.y, w->bounds.w, w->bounds.h);
+                        label("scroll: %0.2f/%0.2f, %0.2f/%0.2f\n", w->scroll.x, w->scrollMax.x, w->scroll.y, w->scrollMax.y);
 
                         tree_pop();
                     }
@@ -60,53 +88,53 @@ void show_settings(bool* isOpen)
 
     // clang-format off
 
-    if (begin_window(_T("Settings"), isOpen, uiVec2(320.0f, 412.0f))) {
-        separator(_T("Title"));
+    if (begin_window("Settings", isOpen, uiVec2(320.0f, 412.0f))) {
+        separator("Title");
 
-        label(width, _T("background:")); sameline(); drag_color(&style()->titleBackground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->titleBackground[2].x);
+        label(width, "background:"); sameline(); drag_color(&style()->titleBackground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->titleBackground[2].x);
 
-        label(width, _T("foreground:")); sameline(); drag_color(&style()->titleForeground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->titleForeground[2].x);
+        label(width, "foreground:"); sameline(); drag_color(&style()->titleForeground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->titleForeground[2].x);
 
-        separator(_T("Window"));
+        separator("Window");
 
-        label(width, _T("background:")); sameline(); drag_color(&style()->windowBackground.x);
-        label(width, _T("foreground:")); sameline(); drag_color(&style()->windowForeground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->windowForeground[2].x);
+        label(width, "background:"); sameline(); drag_color(&style()->windowBackground.x);
+        label(width, "foreground:"); sameline(); drag_color(&style()->windowForeground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->windowForeground[2].x);
 
-        separator(_T("Widget"));
+        separator("Widget");
 
-        label(width, _T("background:")); sameline(); drag_color(&style()->widgetBackground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->widgetBackground[1].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->widgetBackground[2].x);
-        label(width, _T("foreground:")); sameline(); drag_color(&style()->widgetForeground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->widgetForeground[1].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->widgetForeground[2].x);
+        label(width, "background:"); sameline(); drag_color(&style()->widgetBackground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->widgetBackground[1].x);
+        label(width, "");            sameline(); drag_color(&style()->widgetBackground[2].x);
+        label(width, "foreground:"); sameline(); drag_color(&style()->widgetForeground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->widgetForeground[1].x);
+        label(width, "");            sameline(); drag_color(&style()->widgetForeground[2].x);
 
         /*
-        separator(_T("Button"));
+        separator("Button");
 
-        label(width, _T("background:")); sameline(); drag_color(&style()->buttonBackground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->buttonBackground[1].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->buttonBackground[2].x);
+        label(width, "background:"); sameline(); drag_color(&style()->buttonBackground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->buttonBackground[1].x);
+        label(width, "");            sameline(); drag_color(&style()->buttonBackground[2].x);
         */
 
-        separator(_T("Thumb"));
+        separator("Thumb");
 
-        label(width, _T("background:")); sameline(); drag_color(&style()->trackBackground.x);
-        label(width, _T("foreground:")); sameline(); drag_color(&style()->thumbForeground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->thumbForeground[1].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->thumbForeground[2].x);
+        label(width, "background:"); sameline(); drag_color(&style()->trackBackground.x);
+        label(width, "foreground:"); sameline(); drag_color(&style()->thumbForeground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->thumbForeground[1].x);
+        label(width, "");            sameline(); drag_color(&style()->thumbForeground[2].x);
 
-        separator(_T("Text"));
+        separator("Text");
 
-        label(width, _T("background:")); sameline(); drag_color(&style()->background[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->background[1].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->background[2].x);
-        label(width, _T("foreground:")); sameline(); drag_color(&style()->foreground[0].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->foreground[1].x);
-        label(width, _T(""));            sameline(); drag_color(&style()->foreground[2].x);
+        label(width, "background:"); sameline(); drag_color(&style()->background[0].x);
+        label(width, "");            sameline(); drag_color(&style()->background[1].x);
+        label(width, "");            sameline(); drag_color(&style()->background[2].x);
+        label(width, "foreground:"); sameline(); drag_color(&style()->foreground[0].x);
+        label(width, "");            sameline(); drag_color(&style()->foreground[1].x);
+        label(width, "");            sameline(); drag_color(&style()->foreground[2].x);
 
         end_window();
     }
@@ -114,41 +142,42 @@ void show_settings(bool* isOpen)
     // clang-format on
 }
 
-static void show_basic_widget(uiChar* str, size_t length)
+static void show_basic_widget(char* str, size_t length)
 {
-    separator(_T("text separator"));
+    separator("text separator");
     separator();
-    separator(_T("edit"));
+    separator("edit");
     edit(str, length);
 }
 
 // 显示演示窗口
 void show_demo()
 {
-    static bool bChecked   = true;
-    static float fSlider   = 10.0f;
-    static int iDrag       = 10;
-    static float fDrag     = 10.0f;
-    static uiChar str[256] = L"abcijklmnWM中文测试";
+    static bool bChecked     = true;
+    static float fSlider     = 10.0f;
+    static int iDrag         = 10;
+    static float fDrag       = 10.0f;
+    static char u8buf[256]   = u8"abcijklmnWM中文测试abcdefghijklmnopqrstuvwxyz";
+    // static wchar_t wbuf[256] = L"abcijklmnWM中文测试abcdefghijklmnopqrstuvwxyz";
 
-    if (begin_window(_T("DEMO"), uiVec2(320.0f, 4.0f), uiVec2(300, 400.0f))) {
-        if (collapsible_panel(_T("Settings"), UI_FLAGS_OPEN)) {
-            checkbox(_T("Debug"), &_m_showDebug);
-            checkbox(_T("Settings"), &_m_showSettings);
-            label(_T("message: %s"), _m_msg.c_str());
+    if (begin_window("DEMO", nullptr, uiVec2(320.0f, 4.0f), uiVec2(300.0f, 400.0f))) {
+        if (collapsible_panel("Settings", UI_FLAGS_OPEN)) {
+            checkbox("Debug", &_m_showDebug);
+            checkbox("Settings", &_m_showSettings);
+            label("message: %s", _m_msg.c_str());
         }
 
-        if (collapsible_panel(_T("Widgets"), UI_FLAGS_OPEN)) {
-            checkbox(_T("check"), &bChecked);
-            slider(_T("slider"), &fSlider, 0.0f, 100.0f);
+        if (collapsible_panel("Widgets", UI_FLAGS_OPEN)) {
+            checkbox("check", &bChecked);
+            slider("slider", &fSlider, 0.0f, 100.0f);
             drag_int(-1.0f, &iDrag, -100, 100);
             drag_float(-1.0f, &fDrag, -100.0f, 100.0f);
-            separator(_T("buttons"));
+            separator("buttons");
             for (int i = 0; i < 10; ++i) {
-                label(80.0f, _T("label %d:"), i);
+                label(80.0f, "label %d:", i);
                 sameline();
-                if (button(format(_T("button %d"), i), uiVec2(0.0f))) {
-                    _m_msg = format(_T("click %d\n"), i);
+                if (button(format("button %d", i), uiVec2(0.0f))) {
+                    _m_msg = format("click %d\n", i);
                 }
             }
         }
@@ -156,29 +185,37 @@ void show_demo()
         end_window();
     }
 
-    if (begin_window(_T("Window"), nullptr, uiVec2(624.0f, 4.0f), uiVec2(300, 400.0f))) {
-        checkbox(_T("check"), &bChecked);
-        slider(_T("slider"), &fSlider, 0.0f, 100.0f);
-        separator(_T("text separator"));
+    if (begin_window("Window", nullptr, uiVec2(624.0f, 4.0f), uiVec2(300.0f, 400.0f))) {
+        checkbox("check", &bChecked);
+        slider("slider", &fSlider, 0.0f, 100.0f);
+        separator("text separator");
         separator();
-        separator(_T("edit"));
-        edit(str, _countof(str));
-        separator(_T("tree"));
-        if (treenode(_T("tree"), UI_FLAGS_OPEN)) {
-            label(_T("label"));
-            label(_T("label"));
-            checkbox(_T("check"), &bChecked);
-            slider(_T("slider"), &fSlider, 0.0f, 100.0f);
-            if (treenode(_T("tree3"))) {
-                if (treenode(_T("tree4"))) {
-                    button(_T("buttonX"));
-                    edit(str, _countof(str));
-                    label(_T("node3"));
-                    label(_T("node4"));
+
+        label("Edit: (utf-8)");
+        edit(u8buf, countof(u8buf));
+        edit(u8buf, countof(u8buf));
+
+        // label("Edit: (wchar_t)");
+        // edit(wbuf, countof(wbuf));
+        // edit(wbuf, countof(wbuf));
+
+        separator("tree");
+        if (treenode("tree", UI_FLAGS_OPEN)) {
+            label("label");
+            label("label");
+            checkbox("check", &bChecked);
+            slider("slider", &fSlider, 0.0f, 100.0f);
+            if (treenode("tree3")) {
+                if (treenode("tree4")) {
+                    button("buttonX");
+                    edit(u8buf, countof(u8buf));
+                    // edit(wbuf, countof(wbuf));
+                    label("node3");
+                    label("node4");
                     tree_pop();
                 }
-                label(_T("node3"));
-                label(_T("node4"));
+                label("node3");
+                label("node4");
                 tree_pop();
             }
             tree_pop();
@@ -187,27 +224,27 @@ void show_demo()
         end_window();
     }
 
-    if (begin_window(_T("Items"), nullptr, uiVec2(928.0f, 4.0f), uiVec2(300, 400.0f))) {
-        checkbox(_T("check"), &bChecked);
-        slider(_T("slider"), &fSlider, 0.0f, 100.0f);
+    if (begin_window("Items", nullptr, uiVec2(928.0f, 4.0f), uiVec2(300.0f, 400.0f))) {
+        checkbox("check", &bChecked);
+        slider("slider", &fSlider, 0.0f, 100.0f);
 
-        separator(_T("scroll"));
+        separator("scroll");
         static float fScroll    = 10.0f;
         static float fScrollMax = 20.0f;
-        hscroll(_T("scroll"), &fScroll, 0.0f, fScrollMax);
-        slider(_T("scroll Max"), &fScrollMax, 10.0f, 400.0f);
+        hscroll("scroll", &fScroll, 0.0f, fScrollMax);
+        slider("scroll Max", &fScrollMax, 10.0f, 400.0f);
 
-        separator(_T("list box"));
+        separator("list box");
         // test listbox
-        if (begin_list(_T("listbox"))) {
+        if (begin_list("listbox")) {
             static int id = -1;
-            for (int i = 0; i < 10; ++i) {
-                if (selectable(format(_T("select %d"), i), id == i, uiVec2(-1.0f, 0.0f))) {
+            for (int i = 0; i < 100; ++i) {
+                if (selectable(format("select %d", i), id == i, uiVec2(-1.0f, 0.0f))) {
                     id = i;
                 }
             }
             end_list();
-            label(_T("select: %d"), id);
+            label("select: %d", id);
         }
 
         end_window();

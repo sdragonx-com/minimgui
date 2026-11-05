@@ -49,10 +49,16 @@ float char_width(int ch);
 float char_height();
 
 // 返回文字宽度
-float text_width(const uiChar* text, size_t length);
+float text_width(const char* text, size_t length);
+
+// 返回文字宽度
+float text_width(const wchar_t* text, size_t length);
 
 // 创建图片 (RGBA)
 uiHandle create_image(int width, int height);
+
+// 更新图片区域 (RGBA)
+int update_image(uiHandle image, int x, int y, int w, int h, const void* data);
 
 // 删除图片
 void delete_image(uiHandle image);

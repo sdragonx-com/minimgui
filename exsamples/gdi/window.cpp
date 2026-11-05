@@ -286,7 +286,7 @@ void clear(COLORREF color)
 // 显示消息对话框
 void msgbox(PCTSTR param, ...)
 {
-    TCHAR buf[1024] = { };
+    TCHAR buf[1024] = { 0 };
     va_list body;
     va_start(body, param);
     _vsntprintf(buf, 1024, param, body);

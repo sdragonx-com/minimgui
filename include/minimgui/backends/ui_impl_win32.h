@@ -17,8 +17,11 @@ namespace minimgui {
 
 int init_win32(HWND hwnd, HDC hdc);
 
-// 按键映射
+// 按键映射 VKey -> UI Key
 int key_map(int key);
+
+// 按键映射 UI Keys -> VKey
+int key_unmap(int key);
 
 } // namespace minimgui
 

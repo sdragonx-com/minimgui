@@ -2,7 +2,12 @@
 #include "../ui_gfx.h"
 #include "../ui_user.h"
 
+#if !defined(PROPID)
 #define PROPID ULONG
+#endif
+
+using std::max;
+using std::min;
 
 #include <windows.h>
 #include <propidl.h>
@@ -14,41 +19,17 @@
 
 namespace minimgui {
 
-#if defined(UI_USE_UTF8)
-const UINT CODE_PAGE = CP_UTF8;
-#else
-const UINT CODE_PAGE = CP_ACP;
-#endif
-
 // HDC _m_hdc                  = nullptr;
 Gdiplus::Graphics* _m_graph = nullptr;
 Gdiplus::Font* _m_font      = nullptr;
 
 //------------------------------------------------------------------------------
 
-std::wstring to_wstring(const char* str, int length)
-{
-    int wlen = MultiByteToWideChar(CODE_PAGE, 0, str, length, NULL, 0);
-    if (wlen <= 0)
-        return 0;
-
-    std::wstring wstr(wlen, 0);
-    MultiByteToWideChar(CODE_PAGE, 0, str, length, &wstr[0], wlen);
-
-    return wstr;
-}
-
-std::wstring to_wstring(const std::string& str)
-{
-    return to_wstring(str.c_str(), str.length());
-}
-
-/*
-static Gdiplus::Color toColor(const uiColor& color)
-{
-    return Gdiplus::Color(color.a, color.r, color.g, color.b);
-}
-*/
+#if defined(MINIMGUI_UTF8_CHAR)
+const UINT CODE_PAGE = CP_UTF8;
+#else
+const UINT CODE_PAGE = CP_ACP;
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -113,6 +94,8 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
     Gdiplus::StringFormat format(Gdiplus::StringFormat::GenericTypographic());
     format.SetFormatFlags(format.GetFormatFlags() | Gdiplus::StringFormatFlagsMeasureTrailingSpaces); // 防止忽略末尾空格
 
+    std::wstring wstr;
+
     const uiVec2* points = cmdlist.point_data();
     for (size_t cmdID = 0; cmdID < cmdlist.command_count(); ++cmdID) {
         const uiCommandList::command& cmd = cmdlist.commands(cmdID);
@@ -154,7 +137,6 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
                 //                    points[i - 0].x, points[i - 0].y
                 //                );
             }
-
             break;
         case uiCommandList::ROUND_RECT | uiCommandList::FILL_MODE:
             points = cmdlist.point_data() + cmd.geom.index;
@@ -166,7 +148,6 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
                 //                    points[i - 0].x, points[i - 0].y
                 //                );
             }
-
             break;
         case uiCommandList::ELLIPSE:
             points = cmdlist.point_data() + cmd.geom.index;
@@ -202,27 +183,25 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             break;
         case uiCommandList::STRING: // 绘制字符串
         {
-            textBrush.SetColor(RedBlueSwap(cmd.text.color));
             points              = cmdlist.point_data() + cmd.text.index;
             const uiString& str = cmdlist.strings(cmd.text.string);
-            #if defined(UNICODE)
+
+            textBrush.SetColor(RedBlueSwap(cmd.text.color));
+
+            #if defined(MINIMGUI_UTF8_ENCODING)
+            utf8_to_unicode(wstr, str.c_str(), str.length());
+            #else
+            ansi_to_unicode(wstr, str.c_str(), str.length());
+            #endif
+            
             _m_graph->DrawString(
-                str.c_str(), (int) str.length(),
+                wstr.c_str(), (int) wstr.length(),
                 _m_font,
                 Gdiplus::PointF(points[0].x, points[0].y),
                 &format,
                 &textBrush
             );
-            #else
-            std::wstring wstr = to_wstring(cmdlist.strings[cmd.count]);
-            _m_graph->DrawString(
-                wstr.c_str(), (int) wstr.length(),
-                _m_font,
-                Gdiplus::PointF(points[pos].x, points[pos].y),
-                &format,
-                &brush
-            );
-            #endif
+
             break;
         }
         case uiCommandList::IMAGE:
@@ -289,7 +268,7 @@ static uiVec2 measure_text(const wchar_t* text, size_t length)
         Gdiplus::StringFormat format(Gdiplus::StringFormat::GenericTypographic());
         format.SetFormatFlags(format.GetFormatFlags() | Gdiplus::StringFormatFlagsMeasureTrailingSpaces);
         _m_graph->MeasureString(
-            text, length,
+            text, (int) length,
             _m_font,
             layoutSize,
             // Gdiplus::StringFormat::GenericTypographic(), // 会把末尾空格忽略
@@ -316,15 +295,24 @@ float char_height()
 }
 
 // 返回文字宽度
-float text_width(const char* text, size_t length)
+float text_width(const char* str, size_t length)
 {
-    std::wstring wstr = to_wstring(text, length);
+    if (length == SIZE_MAX)
+        length = strlen(str);
+    std::wstring wstr;
+    #if defined(MINIMGUI_UTF8_ENCODING)
+    utf8_to_unicode(wstr, str, length);
+    #else
+    ansi_to_unicode(wstr, str, length);
+    #endif
     return measure_text(wstr.c_str(), wstr.length()).x;
 }
 
-float text_width(const wchar_t* text, size_t length)
+float text_width(const wchar_t* str, size_t length)
 {
-    return measure_text(text, length).x;
+    if (length == SIZE_MAX)
+        length = wcslen(str);
+    return measure_text(str, length).x;
 }
 
 #if 0
@@ -435,7 +423,12 @@ uiHandle load_image(const char* filename)
         return 0;
     }
 
-    std::wstring wstr = to_wstring(filename, strlen(filename));
+    std::wstring wstr;
+    #if defined(MINIMGUI_UTF8_ENCODING)
+    utf8_to_unicode(wstr, filename, strlen(filename));
+    #else
+    ansi_to_unicode(wstr, filename, strlen(filename));
+    #endif
     return load_image(wstr.c_str());
 }
 

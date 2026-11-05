@@ -20,8 +20,11 @@ static glfont _m_font;
 // 初始化 OpenGL 实例环境
 void init_gl2(void* instance)
 {
-    // _m_font.load("MaokenZhuyuanTi.ttf", 16.0f);
-    _m_font.load("HarmonyOS_Sans_SC_Regular.ttf", 16.0f);
+    // "c:/windows/fonts/consola.ttf"
+    // "c:/windows/fonts/msyh.ttc"
+    // "MaokenZhuyuanTi.ttf"
+    // "HarmonyOS_Sans_SC_Regular.ttf"
+    _m_font.load("c:/windows/fonts/msyh.ttc", 16.0f);
 }
 
 // 释放 OpenGL 实例环境
@@ -139,6 +142,7 @@ void on_begin_draw(void* instance)
 
     // 开启剪裁
     glEnable(GL_SCISSOR_TEST);
+    glScissor(0, 0, w, h);
 }
 
 // 结束绘制
@@ -202,6 +206,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
     uiRenderList renderer;
     std::vector<uiRect> clipStack;
     uiRect rect;
+    std::wstring wstr;
 
     const uiVec2* points;
     for (size_t cmdID = 0; cmdID < cmdlist.command_count(); ++cmdID) {
@@ -226,28 +231,29 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
         case uiCommandList::FILL_IMAGE:
             break;
         case uiCommandList::LINE:
-            renderer.set_color(pen);
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
                 renderer.draw_line(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
             }
             break;
         case uiCommandList::RECT:
-            renderer.set_color(pen);
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
                 renderer.draw_rect(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
             }
             break;
         case uiCommandList::RECT | uiCommandList::FILL_MODE:
-            renderer.set_color(brush);
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
                 renderer.fill_rect(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
             }
             break;
         case uiCommandList::ROUND_RECT:
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
             for (size_t i = 2; i < cmd.geom.count; i += 3) {
                 // draw_round_rect(
                 //     points[i - 2].x, points[i - 2].y,
@@ -258,6 +264,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             break;
         case uiCommandList::ROUND_RECT | uiCommandList::FILL_MODE:
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
             for (size_t i = 2; i < cmd.geom.count; i += 3) {
                 // fill_round_rect(
                 //     points[i - 2].x, points[i - 2].y,
@@ -268,19 +275,21 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             break;
         case uiCommandList::ELLIPSE:
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
                 // draw_ellipse(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
             }
             break;
         case uiCommandList::ELLIPSE | uiCommandList::FILL_MODE:
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
             for (size_t i = 1; i < cmd.geom.count; i += 2) {
                 // fill_ellipse(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
             }
             break;
         case uiCommandList::TRIANGLE:
-            renderer.set_color(pen);
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
             for (size_t i = 2; i < cmd.geom.count; i += 3) {
                 renderer.draw_triangle(
                     points[i - 2].x, points[i - 2].y,
@@ -302,42 +311,24 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             break;
         case uiCommandList::POLYGON:
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
             // draw_polygon(points, cmd.geom.count);
             break;
         case uiCommandList::POLYGON | uiCommandList::FILL_MODE:
             points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
             // fill_polygon(points, cmd.geom.count);
             break;
         case uiCommandList::STRING: // 绘制字符串
         {
-            renderer.set_color(cmd.text.color);
             const uiString& str = cmdlist.strings(cmd.text.string);
             uiVec2 pos          = cmdlist.points(cmd.text.index);
-            GLuint texID        = 0;
-            for (size_t i = 0; i < str.length(); ++i) {
-                uiChar ch          = str[i];
-                glfont::glyph icon = _m_font.get_char(ch);
-                if (!icon) {
-                    continue;
-                }
-                if (texID != icon->image.image) {
-                    texID = icon->image.image;
-                    renderer.set_texture(texID);
-                }
-                renderer.draw_image(
-                    // icon->image.image,
-                    pos.x + icon->data.bearingX,
-                    pos.y + (_m_font.size() - icon->data.bearingY),
-                    static_cast<float>(icon->image.width),
-                    static_cast<float>(icon->image.height),
-                    icon->image.u1, icon->image.v1, icon->image.u2, icon->image.v2
-                );
-                pos.x += icon->data.advanceX;
-            }
-            // 还原纹理
-            if (texID != 0) {
-                renderer.set_texture(GL_NONE);
-            }
+
+            renderer.set_color(cmd.text.color);
+
+            utf8_to_unicode(wstr, str.c_str(), str.length());
+            _m_font.draw_string(renderer, pos.x, pos.y, wstr.c_str(), wstr.length());
+
             break;
         }
         case uiCommandList::IMAGE:
@@ -415,7 +406,13 @@ float char_height()
 }
 
 // 返回文字宽度
-float text_width(const uiChar* text, size_t length)
+float text_width(const char* text, size_t length)
+{
+    return _m_font.text_width(reinterpret_cast<const unsigned char*>(text), length);
+}
+
+// 返回文字宽度
+float text_width(const wchar_t* text, size_t length)
 {
     return _m_font.text_width(text, length);
 }
@@ -437,7 +434,7 @@ static GLuint create_texture2D(int w, int h, const void* data)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
     return texID;
 }
@@ -471,6 +468,15 @@ uiHandle load_image(const char* filename)
 
 uiHandle load_image(const wchar_t* filename)
 {
+}
+
+// 更新图片区域 (RGBA)
+int update_image(uiHandle image, int x, int y, int w, int h, const void* data)
+{
+    GLuint texID = (GLuint) image;
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glBindTexture(GL_TEXTURE_2D, GL_NONE);
 }
 
 // 删除图片

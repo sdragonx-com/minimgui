@@ -30,7 +30,8 @@ public:
         float advanceY;
     };
 
-    static const int DEFAULT_TEXTURE_SIZE = 1024; // 默认纹理大小
+    static const int DEFAULT_TEXTURE_SIZE = 1024;       // 默认纹理大小
+    static const int TEXTURE_FILTER       = GL_NEAREST; // 纹理过滤模式
 
     typedef glimagelist<wchar_t, char_info>::const_pointer glyph;
 
@@ -90,7 +91,7 @@ public:
         this->set_size(fontSize);
 
         // 初始化图标列表
-        m_imagelist.init(textureSize, textureSize, static_cast<int>(fontSize + 0.5f), GL_RGBA, GL_NEAREST);
+        m_imagelist.init(textureSize, textureSize, static_cast<int>(fontSize + 0.5f), GL_RGBA, TEXTURE_FILTER);
 
         return 0;
     }
@@ -117,7 +118,7 @@ public:
         this->set_size(fontSize);
 
         // 初始化图标列表
-        m_imagelist.init(textureSize, textureSize, static_cast<int>(fontSize + 0.5f), GL_RGBA, GL_NEAREST);
+        m_imagelist.init(textureSize, textureSize, static_cast<int>(fontSize + 0.5f), GL_RGBA, TEXTURE_FILTER);
 
         return 0;
     }
@@ -167,13 +168,10 @@ public:
     // 获得字符宽度
     float char_width(wchar_t ch)
     {
-        if (iscntrl(ch)) { // 控制字符
+        if (ch < 128 && ::iscntrl(ch)) { // 控制字符
             return 0.0f;
         }
-        if (!m_imagelist.exists(ch)) {
-            make_char(ch);
-        }
-        glyph icon = m_imagelist.icons(ch);
+        glyph icon = get_char(ch);
         return icon ? icon->data.advanceX : 0.0f;
     }
 
@@ -183,17 +181,30 @@ public:
         return m_size;
     }
 
+    // 获取字符串宽度 (UTF-8)
+    float text_width(const unsigned char* text, size_t length)
+    {
+        float w = 0.0f;
+        for (size_t i = 0; i < length;) {
+            uint32_t cp;
+            int n = utf8_decode(text + i, length, &cp, nullptr);
+            w += this->char_width(static_cast<int>(cp));
+            i += n;
+        }
+        return w;
+    }
+
     // 获取字符串宽度
     float text_width(const wchar_t* text, size_t length)
     {
         float width = 0.0f;
         for (size_t i = 0; i < length; ++i) {
             wchar_t ch = text[i];
-            if (iscntrl(ch)) { // 控制字符
+            if (ch < 128 && ::iscntrl(ch)) { // 控制字符
                 continue;
             }
             glyph icon = get_char(ch);
-            width += icon->data.advanceX;
+            width += icon ? icon->data.advanceX : 0.0f;
         }
         return width;
     }
@@ -207,11 +218,48 @@ public:
         return m_imagelist.icons(ch);
     }
 
+    template<typename RT>
+    void draw_string(RT& renderer, float x, float y, const wchar_t* str, size_t length)
+    {
+        GLuint texID = 0;
+        for (size_t i = 0; i < length; ++i) {
+            int ch             = str[i];
+            glfont::glyph icon = this->get_char(ch);
+            if (!icon) {
+                continue;
+            }
+            if (texID != icon->image.image) {
+                texID = icon->image.image;
+                renderer.set_texture(texID);
+            }
+
+            float n = 0.0f;
+            if (i != length - 1) {
+                n = static_cast<float>(stbtt_GetCodepointKernAdvance(&m_font, ch, str[i + 1])) * m_scale;
+            }
+
+            renderer.draw_image(
+                // icon->image.image,
+                x + icon->data.bearingX + n,
+                y + (m_size - icon->data.bearingY),
+                static_cast<float>(icon->image.width),
+                static_cast<float>(icon->image.height),
+                icon->image.u1, icon->image.v1, icon->image.u2, icon->image.v2
+            );
+            x += icon->data.advanceX;
+        }
+
+        // 还原纹理
+        if (texID != 0) {
+            renderer.set_texture(GL_NONE);
+        }
+    }
+
     #if 0
     // 输出一个字符
     float put_char(float x, float y, wchar_t ch)
     {
-        if (iscntrl(ch)) { // 控制字符
+        if (ch < 128 && ::iscntrl(ch)) { // 控制字符
             return 0.0f;
         }
         if (!m_imagelist.exists(ch)) {
@@ -262,11 +310,12 @@ private:
         int advance, lsb;
 
         byte_t* image = stbtt_GetCodepointBitmap(handle(), 0, m_scale, ch, &w, &h, &x, &y);
+        // byte_t* image = stbtt_GetCodepointBitmapSubpixel(handle(), 0.0f, m_scale, 0.0f, 0.0f, ch, &w, &h, &x, &y);
         // int id        = stbtt_FindGlyphIndex(this->handle(), ch);
         // byte_t* image = stbtt_GetGlyphBitmapSubpixel(this->handle(), 0, m_scale, 0.0f, 0.0f, id, &w, &h, &x, &y);
 
         if (!image) {
-            printf("freetype> rander character faild.\n");
+            printf("freetype> rander character faild: 0x%08X.\n", ch);
             return nullptr;
         }
 
@@ -282,8 +331,9 @@ private:
 
     double round(double value)
     {
-        // return value + 0.5f;
-        return value < 0.0f ? std::ceil(value - 0.5f) : std::floor(value + 0.5f);
+        // return value;
+        return value + 0.5f;
+        // return value < 0.0f ? std::ceil(value - 0.5f) : std::floor(value + 0.5f);
     }
 
     // 生成一个字符

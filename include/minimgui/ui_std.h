@@ -14,33 +14,32 @@
     #define _UNICODE
 #endif
 
+#define NOMINMAX
+
 #if defined(min) || defined(max)
     #pragma message "if you include <windows.h>, please define NOMINMAX first."
 #endif
 
+#define MINIMGUI_UTF8_CHAR          // char 是否是 UTF-8 字符
+// #define MINIMGUI_UTF8_ENCODING      // uiString 是否使用 UTF-8 存储
+
+// std c
 #include <float.h>
 #include <math.h>
-#include <tchar.h>
+#include <string.h>
+// #include <tchar.h>
 
-// std
+// std c++
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "ui_math.h"
+#include "ui_string.h"
 
 namespace minimgui {
-
-// 字符
-#if defined(UNICODE) || defined(_UNICODE)
-typedef wchar_t uiChar;
-#else
-// #define UI_USE_UTF8
-typedef char uiChar;
-#endif
-
-typedef std::basic_string<uiChar> uiString;
 
 // 句柄
 typedef uint64_t uiHandle;
@@ -376,6 +375,46 @@ struct uiStyle
 
     uiStyle();
 };
+
+//------------------------------------------------------------------------------
+// 辅助函数
+//------------------------------------------------------------------------------
+
+// 生成 hashID
+uiID ui_hash(const void* data, size_t size);
+uiID ui_hash(const char* str, size_t length);
+uiID ui_hash(const wchar_t* str, size_t length);
+uiID ui_hash(const uiString& str);
+
+// bool 转字符串
+const char* bool_to_string(bool value);
+
+// 格式化字符串 (最大 256 字节)
+const char* format(const char* param, ...);
+const wchar_t* format(const wchar_t* param, ...);
+
+// 判断是否支持标志位
+inline bool check_flags(uint32_t flags, uint32_t value)
+{
+    return (flags & value) == value;
+}
+
+// 通过掩码设置标志位
+inline void set_flags_masked(uint32_t& flags, uint32_t value, uint32_t mask)
+{
+    flags = (flags & (~mask)) | (value & mask);
+}
+
+// 设置标志位是否启用
+inline void set_flags_enabled(uint32_t& flags, uint32_t value, bool enable)
+{
+    if (enable) {
+        flags |= value;
+    }
+    else {
+        flags &= ~value;
+    }
+}
 
 // load file to buffer
 template<typename T>

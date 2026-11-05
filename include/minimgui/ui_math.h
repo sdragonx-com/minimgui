@@ -107,6 +107,11 @@ public:
         );
     }
 
+    uiRect expand(const uiVec2& v) const
+    {
+        return this->expand(v.x, v.y);
+    }
+
     // 返回缩小后的矩形
     uiRect shrink(float cx, float cy) const
     {
@@ -116,6 +121,11 @@ public:
             w - cx * 2.0f,
             h - cy * 2.0f
         );
+    }
+
+    uiRect shrink(const uiVec2& v) const
+    {
+        return this->shrink(v.x, v.y);
     }
 
     // 返回点是否在矩形内

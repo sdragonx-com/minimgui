@@ -11,12 +11,18 @@
 
 #include "ui.h"
 #include "ui_gfx.h"
-#include "ui_utils.h"
 
 #include <list>
 #include <map>
 
 namespace minimgui {
+
+// 调试参数
+enum DebugFlags
+{
+    UI_DEBUG_NONE               = 0,
+    UI_DEBUG_SHOW_WIDGET_BOUNDS = 1,
+};
 
 // 部件
 struct uiWidget
@@ -31,21 +37,20 @@ struct uiWidget
     // 默认构造函数
     uiWidget(uiWidgetType type = UI_WIDGET_NONE) : type(type), id(), flags(), text(), bounds(), parent() { }
 
+    // 如果有 ID 就用 ID 初始化，否则使用文字初始化
     uiWidget(uiWidgetType type, const uiString& text, uiID id, uiWidget* parent = nullptr) :
         type(type),
-        id(id ? id : ui_hash(text)), // 如果有 ID 就用 ID 初始化，否则使用文字初始化
+        id(id ? id : ui_hash(text)),
         flags(),
         text(text),
         bounds(),
-        parent(parent)
-    {
-    }
+        parent(parent) { }
 };
 
 // 编辑框
 struct uiEdit : public uiWidget
 {
-    uiChar* buffer;               // 字符缓冲区
+    wchar_t* buffer;              // 字符缓冲区
     int bufferSize;               // 字符缓冲区大小
 
     int length;                   // 字符串长度
@@ -57,6 +62,21 @@ struct uiEdit : public uiWidget
 
     uiEdit() : uiWidget(UI_WIDGET_EDIT), buffer(), bufferSize(), length(), offset(), selectStart(), selectEnd() { }
     uiEdit(uiID id, uiWidget* parent = nullptr) :
+        uiWidget(UI_WIDGET_EDIT, uiString(), id, parent), buffer(), bufferSize(), length(), offset(), selectStart(), selectEnd() { }
+};
+
+struct uiEdit_u8 : public uiWidget
+{
+    char* buffer;    // 字符缓冲区
+    int bufferSize;  // 字符缓冲区大小
+
+    int length;      // 字符串长度
+    int offset;      // 字符串显示偏移量
+    int selectStart; // 选择开始
+    int selectEnd;   // 选择结束
+
+    uiEdit_u8() : uiWidget(UI_WIDGET_EDIT), buffer(), bufferSize(), length(), offset(), selectStart(), selectEnd() { }
+    uiEdit_u8(uiID id, uiWidget* parent = nullptr) :
         uiWidget(UI_WIDGET_EDIT, uiString(), id, parent), buffer(), bufferSize(), length(), offset(), selectStart(), selectEnd() { }
 };
 
@@ -97,7 +117,7 @@ struct uiWindow : public uiPanel
         struct { float w, h; } backupSize;  // 折叠后保存的窗口大小
         struct { float w, h; } popupSize;   // 最后一次统计的弹出窗口大小
     };
-    // clang-format off
+    // clang-format on
 
     // 默认构造函数
     uiWindow(uiFlags panelFlags = UI_WINDOW_DEFAULT) :
@@ -173,45 +193,43 @@ struct uiLayout
 // 环境上下文
 struct uiContext
 {
-    uiFlags debugFlags;     // 调试参数
+    uiFlags debugFlags;              // 调试参数
 
-    uiStyle style;          // 主题
+    uiStyle style;                   // 主题
+    std::vector<uiRect> clipStack;   // 剪裁矩形堆栈
 
-    uiVec2 screen;          // 屏幕大小
-    uiRect clipRect;        // 缓存当前剪裁矩形
+    uiVec2 screen;                   // 屏幕大小
 
-    uiVec2 mouse;           // 当前鼠标坐标
-    uiVec2 lastpos;         // 最后鼠标坐标
-    uiButton button;        // 鼠标按键
-    uiVec2 delta;           // 鼠标从按下开始积累的移动向量
-    float scroll;           // 滚轴数值
+    uiVec2 mouse;                    // 当前鼠标坐标
+    uiVec2 lastpos;                  // 最后鼠标坐标
+    uiButton button;                 // 鼠标按键
+    uiVec2 delta;                    // 鼠标从按下开始积累的移动向量
+    float scroll;                    // 滚轴数值
 
-    uiVec2 clickPos;        // 鼠标点击的位置，一帧之后重置
-    int clicked;            // 鼠标是否点击。点击空白区域设置 -1，点击窗口、部件设置 1，没有点击设置 0。
+    uiVec2 clickPos;                 // 鼠标点击的位置，一帧之后重置
+    int clicked;                     // 鼠标是否点击。点击空白区域设置 -1，点击窗口、部件设置 1，没有点击设置 0。
 
-    int key;                // 当前帧按键输入，处理过后要清零 (这两个都没有做缓存处理)
-    int ch;                 // 当前帧字符输入，处理过后要清零
+    int key;                         // 当前帧按键输入，处理过后要清零 (这两个都没有做缓存处理)
+    int ch;                          // 当前帧字符输入，处理过后要清零
 
-    uiID hoveredWindow;     // 悬停窗口
-    uiID activedWindow;     // 激活窗口
-    uiID focusWindow;       // 焦点窗口
+    uiID hoveredWindow;              // 悬停窗口
+    uiID activedWindow;              // 激活窗口
+    uiID focusWindow;                // 焦点窗口
 
-    uiID hoveredWidget;     // 悬停部件
-    uiID lastHoveredWidget; // 最后悬停部件，用于处理鼠标进入和离开
-    uiID clickedWidget;     // 鼠标点击的窗口、部件
-    uiID popupWidget;       // 当前弹出部件
+    uiID hoveredWidget;              // 悬停部件
+    uiID lastHoveredWidget;          // 最后悬停部件，用于处理鼠标进入和离开
+    uiID clickedWidget;              // 鼠标点击的窗口、部件
+    uiID popupWidget;                // 当前弹出部件
 
-    uiFlags widgetFlags;    // 当前部件的标志，用来公开查询部件状态
-
+    uiFlags widgetFlags;             // 当前部件的标志，用来公开查询部件状态
 
     uiCommandList backgroundCmdList; // 背景绘图列表
     uiCommandList foregroundCmdList; // 前景绘图列表
 
+    uiWindow mainWindow;             // 主窗口 (桌面)
+    uiLayout mainLayout;             // 主窗口布局
 
-    uiWindow mainWindow;            // 主窗口 (桌面)
-    uiLayout mainLayout;            // 主窗口布局
-
-    std::vector<uiWindow*> windows; // 窗口列表
+    std::vector<uiWindow*> windows;  // 窗口列表
 
     // 布局堆栈。开始一个窗口的时候，先压入窗口布局；遇到子容器的时候，再把子容器压进去。
     std::vector<uiLayout> layouts;
@@ -309,7 +327,7 @@ void set_focus(uiWidget* widget);            // 设置焦点部件
 bool is_visible_clipbox(uiWidget* widget);   // 判断部件是否在剪裁矩形内
 
 // 返回部件类型名称
-const uiChar* widget_type_to_string(uiWidgetType type);
+const char* widget_type_to_string(uiWidgetType type);
 
 // 获取部件缓存的状态，这个状态保存在 context 里面，是全局的
 uiFlags& pick_cache_flags(uiID id, uiFlags init);
