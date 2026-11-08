@@ -15,7 +15,10 @@
 
 namespace minimgui {
 
-int init_win32(HWND hwnd, HDC hdc);
+int init_win32(HWND hwnd, bool installWndProc);
+
+// 消息处理函数
+LRESULT CALLBACK win32_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // 按键映射 VKey -> UI Key
 int key_map(int key);

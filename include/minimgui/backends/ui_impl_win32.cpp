@@ -1,27 +1,31 @@
 ﻿#include "ui_impl_win32.h"
 #include "../ui_widgets.h"
+#include "../ui_user.h"
 
 #include <windows.h>
 
 namespace minimgui {
 
-static HWND _m_window = nullptr;
-// static HDC _m_hdc     = nullptr;
-// static HFONT _m_hFont = nullptr;
+static HWND _m_window         = nullptr;
+static WNDPROC _m_prevWndProc = nullptr;
+static uiButton _m_button     = UI_BUTTON_NONE;
 
-int init_win32(HWND hwnd, HDC hdc)
+// 消息处理函数
+LRESULT CALLBACK win32_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+int init_win32(HWND hwnd, bool installWndProc)
 {
     _m_window = hwnd;
-    // _m_hdc    = hdc;
-
-    // if (!_m_hFont) {
-    //     _m_hFont = CreateFont(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, GB2312_CHARSET, 0, 0, DEFAULT_QUALITY, DEFAULT_PITCH, TEXT("Microsoft YaHei"));
-    // }
 
     // 初始化屏幕大小
     RECT rect;
     GetWindowRect(hwnd, &rect);
     on_resize(rect.right - rect.left, rect.bottom - rect.top);
+
+    // 设置消息处理函数
+    if (installWndProc) {
+        _m_prevWndProc = (WNDPROC) SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR) win32_wndproc);
+    }
 
     return 0;
 }
@@ -257,6 +261,56 @@ int key_unmap(int key)
 bool key_state(int key)
 {
     return GetAsyncKeyState(key_unmap(key)) & 0x8000;
+}
+
+// 消息处理函数
+LRESULT CALLBACK win32_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg) {
+    case WM_SIZE:
+        on_resize(LOWORD(lParam), HIWORD(lParam));
+        break;
+    case WM_KEYDOWN:
+        on_key_push(key_map((int) wParam));
+        break;
+    case WM_KEYUP:
+        on_key_pop(key_map((int) wParam));
+        break;
+    case WM_CHAR:
+        on_input((int) wParam);
+        break;
+    case WM_MOUSEMOVE:
+        on_mouse_move((short) LOWORD(lParam), (short) HIWORD(lParam), _m_button);
+        break;
+    case WM_LBUTTONDOWN:
+        _m_button = UI_BUTTON_LEFT;
+        on_mouse_push((short) LOWORD(lParam), (short) HIWORD(lParam), UI_BUTTON_LEFT);
+        break;
+    case WM_LBUTTONUP:
+        _m_button = UI_BUTTON_LEFT;
+        on_mouse_pop((short) LOWORD(lParam), (short) HIWORD(lParam), UI_BUTTON_LEFT);
+        break;
+    case WM_RBUTTONDOWN:
+        _m_button = UI_BUTTON_RIGHT;
+        on_mouse_push((short) LOWORD(lParam), (short) HIWORD(lParam), UI_BUTTON_RIGHT);
+        break;
+    case WM_RBUTTONUP:
+        _m_button = UI_BUTTON_RIGHT;
+        on_mouse_pop((short) LOWORD(lParam), (short) HIWORD(lParam), UI_BUTTON_RIGHT);
+        break;
+    case WM_MOUSEWHEEL:
+        on_scroll((short) HIWORD(wParam) / WHEEL_DELTA);
+        break;
+    default:
+        break;
+    }
+
+    if (_m_prevWndProc) {
+        return _m_prevWndProc(hwnd, msg, wParam, lParam);
+    }
+    else {
+        return DefWindowProc(hwnd, msg, wParam, lParam);
+    }
 }
 
 } // namespace minimgui

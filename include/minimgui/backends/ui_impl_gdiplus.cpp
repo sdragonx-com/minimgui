@@ -193,7 +193,7 @@ void draw_cmd(const uiCommandList& cmdlist, void* instance)
             #else
             ansi_to_unicode(wstr, str.c_str(), str.length());
             #endif
-            
+
             _m_graph->DrawString(
                 wstr.c_str(), (int) wstr.length(),
                 _m_font,
@@ -395,25 +395,8 @@ int count_char_widths(std::vector<float>& widths, const wchar_t* text, size_t le
 // 创建图片 (RGBA)
 uiHandle create_image(int width, int height)
 {
-    HBITMAP hBitmap;
-    BITMAPV5HEADER bi;
-    void* lpBits = 0;
-
-    ZeroMemory(&bi, sizeof(BITMAPV5HEADER));
-    bi.bV5Size        = sizeof(BITMAPV5HEADER);
-    bi.bV5Width       = width;
-    bi.bV5Height      = height;
-    bi.bV5Planes      = 1;
-    bi.bV5BitCount    = 32;
-    bi.bV5Compression = BI_BITFIELDS;
-    bi.bV5RedMask     = 0x00FF0000;
-    bi.bV5GreenMask   = 0x0000FF00;
-    bi.bV5BlueMask    = 0x000000FF;
-    bi.bV5AlphaMask   = 0xFF000000;
-
-    hBitmap = CreateDIBSection(GetDC(nullptr), (BITMAPINFO*) &bi, DIB_RGB_COLORS, (void**) &lpBits, nullptr, (DWORD) 0);
-
-    return (uiHandle) hBitmap;
+    Gdiplus::Bitmap* pBitmap = new Gdiplus::Bitmap(width, height, PixelFormat32bppARGB);
+    return (uiHandle) pBitmap;
 }
 
 // 加载图片
@@ -450,7 +433,8 @@ uiHandle load_image(const wchar_t* filename)
 // 删除图片
 void delete_image(uiHandle image)
 {
-    DeleteObject((HBITMAP) image);
+    Gdiplus::Bitmap* pBitmap = (Gdiplus::Bitmap*) image;
+    delete (pBitmap);
 }
 
 } // namespace minimgui
