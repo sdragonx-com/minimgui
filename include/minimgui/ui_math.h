@@ -233,25 +233,27 @@ inline bool point_in_triangle(uiVec2 p, uiVec2 a, uiVec2 b, uiVec2 c)
     return !(neg && pos);
 }
 
-// 将大小等比例缩放到矩形内
+// 将宽高等比例缩放到矩形内
 inline uiVec2 scale_to_rect(const uiVec2& size, float width, float height, bool stretch)
 {
-    if (size.x <= 0 || size.x <= 0 || width <= 0 || height <= 0) {
+    if (size.x <= 0 || size.y <= 0 || width <= 0 || height <= 0) {
         return size;
     }
 
     // 计算宽高缩放比
     float scale = std::min(width / size.x, height / size.y);
 
-    if (1.0f < scale) { // 放大
-        if (stretch) {  // 伸展
+    // 宽高都比矩形小
+    if (1.0f < scale) {
+        if (stretch) { // 拉伸
             return uiVec2(size.x * scale, size.y * scale);
         }
-        else { // 不放大
+        else { // 原尺寸
             return size;
         }
     }
 
+    // 缩小到矩形范围内
     return uiVec2(size.x * scale, size.y * scale);
 }
 
