@@ -1,0 +1,504 @@
+﻿#include "ui_impl_gl2.h"
+#include "../ui_gfx.h"
+#include "../ui_widgets.h"
+#include "../ui_user.h"
+
+// #include "../ui_font.h"
+
+#include <minimgui/gl/glfont.hpp>
+#include <GLFW/glfw3.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include <stb/stb_truetype.h>
+
+namespace minimgui {
+
+static glfont _m_font;
+
+// 初始化 OpenGL 实例环境
+void init_gl2(void* instance)
+{
+    (void) instance;
+
+    // "c:/windows/fonts/consola.ttf"
+    // "c:/windows/fonts/msyh.ttc"
+    // "MaokenZhuyuanTi.ttf"
+    // "HarmonyOS_Sans_SC_Regular.ttf"
+    _m_font.load("c:/windows/fonts/msyh.ttc", 16.0f);
+}
+
+// 释放 OpenGL 实例环境
+void dispose_gl2(void* instance)
+{
+    (void) instance;
+
+    _m_font.dispose();
+}
+
+// 绘制顶点列表
+static void draw_arrays(GLenum primitive, const uiVec2* vertices, size_t pos, size_t size)
+{
+    glEnableClientState(GL_VERTEX_ARRAY);
+    // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    glVertexPointer(2, GL_FLOAT, sizeof(uiVec2), vertices);
+    // glTexCoordPointer(2, GL_FLOAT, sizeof(uiVec2), ...);
+
+    glDrawArrays(primitive, GLint(pos), GLsizei(size));
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    // glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+}
+
+// 绘制顶点列表
+static void draw_elements(
+    GLenum primitive,
+    const uiVertex* vertices, size_t vertexSize,
+    const uint32_t* indices, size_t indexSize
+)
+{
+    (void) vertexSize;
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    glVertexPointer(2, GL_FLOAT, sizeof(uiVertex), &vertices->position);
+    glTexCoordPointer(2, GL_FLOAT, sizeof(uiVertex), &vertices->texcoord);
+    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(uiVertex), &vertices->color);
+
+    glDrawElements(primitive, GLsizei(indexSize), GL_UNSIGNED_INT, indices);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+}
+
+static void draw_rect(float x, float y, float w, float h)
+{
+    const uiVec2 vs[] = {
+        uiVec2(x, y),
+        uiVec2(x, y + h),
+        uiVec2(x + w, y + h),
+        uiVec2(x + w, y),
+    };
+    draw_arrays(GL_LINE_LOOP, vs, 0, 4);
+}
+
+static void push_rect(std::vector<uiVec2>& vertices, float x, float y, float w, float h)
+{
+    vertices.push_back(uiVec2(x, y));
+    vertices.push_back(uiVec2(x, y + h));
+    vertices.push_back(uiVec2(x + w, y + h));
+    vertices.push_back(uiVec2(x + w, y));
+}
+
+// 初始化界面环境
+void on_begin_context(void* instance)
+{
+    (void) instance;
+}
+
+// 结束界面环境
+void on_end_context(void* instance)
+{
+    (void) instance;
+}
+
+// 初始化绘制
+void on_begin_draw(void* instance)
+{
+    (void) instance;
+
+    const uiVec2 screen = context()->screen;
+
+    // 重置状态
+    glViewport(0, 0, GLsizei(screen.x), GLsizei(screen.y));
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, screen.x, screen.y, 0.0, -1.0f, 1.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    // 颜色
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    // 线宽
+    glLineWidth(1.0f);
+
+    // 开启 2D 纹理
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, GL_NONE);
+
+    // 开启混合
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // 关闭背面剔除
+    // glDisable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
+
+    // 关闭深度
+    glDisable(GL_DEPTH_TEST);
+
+    // 开启剪裁
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(0, 0, GLsizei(screen.x), GLsizei(screen.y));
+}
+
+// 结束绘制
+void on_end_draw(void* instance)
+{
+    (void) instance;
+
+    // 还原状态
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+
+    // 关闭剪裁
+    glDisable(GL_SCISSOR_TEST);
+}
+
+// 绘制渲染命令
+void draw_cmd(const uiRenderList& cmdlist, void* instance)
+{
+    (void) instance;
+
+    for (size_t cmdID = 0; cmdID < cmdlist.command_count(); ++cmdID) {
+        const uiRenderList::command& cmd = cmdlist.commands(cmdID);
+        switch (cmd.inst) {
+        case uiRenderList::POINTS:
+            draw_elements(
+                GL_POINTS,
+                cmdlist.vertex_data(), 0,
+                cmdlist.index_data() + cmd.index, cmd.count
+            );
+            break;
+        case uiRenderList::LINES:
+            draw_elements(
+                GL_LINES,
+                cmdlist.vertex_data(), 0,
+                cmdlist.index_data() + cmd.index, cmd.count
+            );
+            break;
+        case uiRenderList::TRIANGLES:
+            draw_elements(
+                GL_TRIANGLES,
+                cmdlist.vertex_data(), 0,
+                cmdlist.index_data() + cmd.index, cmd.count
+            );
+            break;
+        case uiRenderList::TEXTURE_2D:
+            glBindTexture(GL_TEXTURE_2D, cmd.handle);
+            break;
+        case uiRenderList::CLIPBOX:
+            glScissor((GLint) cmd.x, (GLint) cmd.y, (GLsizei) cmdlist.commands(cmdID + 1).x, (GLsizei) cmdlist.commands(cmdID + 1).y);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+// 绘制命令列表
+void draw_cmd(const uiCommandList& cmdlist, void* instance)
+{
+    (void) instance;
+
+    const uiVec2 screen = context()->screen;
+
+    uiColor pen;
+    // float penWidth = 1.0f; // todo...
+    uiColor brush;
+    uiRenderList renderer;
+    // std::vector<uiRect> clipStack;
+    std::wstring wstr;
+
+    // 当前剪裁矩形
+    uiRect clipBox = uiRect(uiVec2(), screen);
+    renderer.set_clipbox(clipBox.x, clipBox.y, clipBox.w, clipBox.h);
+
+    const uiVec2* points;
+    for (size_t cmdID = 0; cmdID < cmdlist.command_count(); ++cmdID) {
+        const uiCommandList::command& cmd = cmdlist.commands(cmdID);
+        switch (cmd.inst) {
+        case uiCommandList::STROKE:
+            pen = uiColor(
+                RGBA_RED(cmd.stroke.color),
+                RGBA_GREEN(cmd.stroke.color),
+                RGBA_BLUE(cmd.stroke.color),
+                RGBA_ALPHA(cmd.stroke.color)
+            );
+            break;
+        case uiCommandList::FILL_COLOR:
+            brush = uiColor(
+                RGBA_RED(cmd.fill.color),
+                RGBA_GREEN(cmd.fill.color),
+                RGBA_BLUE(cmd.fill.color),
+                RGBA_ALPHA(cmd.fill.color)
+            );
+            break;
+        case uiCommandList::FILL_IMAGE:
+            break;
+        case uiCommandList::LINE:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
+            for (size_t i = 1; i < cmd.geom.count; i += 2) {
+                renderer.draw_line(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
+            }
+            break;
+        case uiCommandList::RECT:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
+            for (size_t i = 1; i < cmd.geom.count; i += 2) {
+                renderer.draw_rect(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
+            }
+            break;
+        case uiCommandList::RECT | uiCommandList::FILL_MODE:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
+            for (size_t i = 1; i < cmd.geom.count; i += 2) {
+                renderer.fill_rect(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
+            }
+            break;
+        case uiCommandList::ROUND_RECT:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
+            for (size_t i = 2; i < cmd.geom.count; i += 3) {
+                // draw_round_rect(
+                //     points[i - 2].x, points[i - 2].y,
+                //     points[i - 1].x, points[i - 1].y,
+                //     points[i - 0].x, points[i - 0].y
+                // );
+            }
+            break;
+        case uiCommandList::ROUND_RECT | uiCommandList::FILL_MODE:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
+            for (size_t i = 2; i < cmd.geom.count; i += 3) {
+                // fill_round_rect(
+                //     points[i - 2].x, points[i - 2].y,
+                //     points[i - 1].x, points[i - 1].y,
+                //     points[i - 0].x, points[i - 0].y
+                // );
+            }
+            break;
+        case uiCommandList::ELLIPSE:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
+            for (size_t i = 1; i < cmd.geom.count; i += 2) {
+                // draw_ellipse(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
+            }
+            break;
+        case uiCommandList::ELLIPSE | uiCommandList::FILL_MODE:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
+            for (size_t i = 1; i < cmd.geom.count; i += 2) {
+                // fill_ellipse(points[i - 1].x, points[i - 1].y, points[i - 0].x, points[i - 0].y);
+            }
+            break;
+        case uiCommandList::TRIANGLE:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
+            for (size_t i = 2; i < cmd.geom.count; i += 3) {
+                renderer.draw_triangle(
+                    points[i - 2].x, points[i - 2].y,
+                    points[i - 1].x, points[i - 1].y,
+                    points[i - 0].x, points[i - 0].y
+                );
+            }
+            break;
+        case uiCommandList::TRIANGLE | uiCommandList::FILL_MODE:
+            renderer.set_color(brush);
+            points = cmdlist.point_data() + cmd.geom.index;
+            for (size_t i = 2; i < cmd.geom.count; i += 3) {
+                renderer.fill_triangle(
+                    points[i - 2].x, points[i - 2].y,
+                    points[i - 1].x, points[i - 1].y,
+                    points[i - 0].x, points[i - 0].y
+                );
+            }
+            break;
+        case uiCommandList::POLYGON:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(pen);
+            // draw_polygon(points, cmd.geom.count);
+            break;
+        case uiCommandList::POLYGON | uiCommandList::FILL_MODE:
+            points = cmdlist.point_data() + cmd.geom.index;
+            renderer.set_color(brush);
+            // fill_polygon(points, cmd.geom.count);
+            break;
+        case uiCommandList::STRING: // 绘制字符串
+        {
+            const uiString& str = cmdlist.strings(cmd.text.string);
+            uiVec2 pos          = cmdlist.points(cmd.text.index);
+
+            renderer.set_color(cmd.text.color);
+
+            utf8_to_unicode(wstr, str.c_str(), str.length());
+            _m_font.draw_string(renderer, pos.x, pos.y, wstr.c_str(), wstr.length());
+
+            break;
+        }
+        case uiCommandList::IMAGE:
+            points = cmdlist.point_data() + cmd.image.index;
+            {
+                renderer.set_color(cmd.image.color);
+                renderer.set_texture(cmdlist.images(cmd.image.id));
+                renderer.draw_image(points[0].x, points[0].y, points[1].x, points[1].y);
+                renderer.set_texture(0);
+            }
+            break;
+
+        case uiCommandList::CLIP_BOX: {
+            clipBox = uiRect(cmd.clip.x, screen.y - (cmd.clip.y + cmd.clip.h), cmd.clip.w, cmd.clip.h);
+            renderer.set_clipbox(clipBox.x, clipBox.y, clipBox.w, clipBox.h);
+            break;
+        }
+
+        /*
+        case uiCommandList::PUSH_CLIP_RESET: {
+            clipStack.push_back(clipBox);
+
+            // renderer.set_color(colors::magenta);
+            // renderer.draw_rect(clipBox.x, clipBox.y, clipBox.w, clipBox.h);
+
+            clipBox = uiRect(cmd.clip.x, screen.y - (cmd.clip.y + cmd.clip.h), cmd.clip.w, cmd.clip.h);
+            renderer.set_clipbox(clipBox.x, clipBox.y, clipBox.w, clipBox.h);
+
+            // renderer.set_color(colors::magenta);
+            // renderer.draw_rect(cmd.clip.x, cmd.clip.y, cmd.clip.w, cmd.clip.h);
+            break;
+        }
+        case uiCommandList::PUSH_CLIP_INTERSECT: {
+            clipStack.push_back(clipBox);
+
+            // renderer.set_color(colors::magenta);
+            // renderer.draw_rect(clipBox.x, clipBox.y, clipBox.w, clipBox.h);
+
+            clipBox = clipBox.intersection(uiRect(cmd.clip.x, screen.y - (cmd.clip.y + cmd.clip.h), cmd.clip.w, cmd.clip.h));
+            renderer.set_clipbox(clipBox.x, clipBox.y, clipBox.w, clipBox.h);
+
+            // renderer.set_color(colors::magenta);
+            // renderer.draw_rect(cmd.clip.x, cmd.clip.y, cmd.clip.w, cmd.clip.h);
+            break;
+        }
+        case uiCommandList::POP_CLIP: {
+            if (!clipStack.empty()) {
+                clipBox = clipStack.back();
+                clipStack.pop_back();
+                // glScissor((GLint) rect.x, (GLint) rect.y, (GLsizei) rect.w, (GLsizei) rect.h);
+                renderer.set_clipbox(clipBox.x, clipBox.y, clipBox.w, clipBox.h);
+            }
+            break;
+        }
+        */
+        default:
+            break;
+        }
+    }
+
+    // 绘制命令
+    draw_cmd(renderer, instance);
+}
+
+// 返回字符宽度
+float char_width(int ch)
+{
+    return _m_font.char_width(ch);
+}
+
+// 返回字符高度
+float char_height()
+{
+    return _m_font.char_height() * 1.25f;
+}
+
+// 返回文字宽度
+float text_width(const char* text, size_t length)
+{
+    return _m_font.text_width(reinterpret_cast<const unsigned char*>(text), length);
+}
+
+// 返回文字宽度
+float text_width(const wchar_t* text, size_t length)
+{
+    return _m_font.text_width(text, length);
+}
+
+// 创建纹理
+static GLuint create_texture2D(int w, int h, const void* data)
+{
+    GLuint texID = 0;
+
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    // set filter mode
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    // set wrap mode
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glBindTexture(GL_TEXTURE_2D, GL_NONE);
+
+    return texID;
+}
+
+// 创建图片 (RGBA)
+uiHandle create_image(int width, int height)
+{
+    return create_texture2D(width, height, nullptr);
+}
+
+// 加载图片
+uiHandle load_image(const char* filename)
+{
+    GLuint texID = 0;
+    int w, h, channels;
+
+    // stbi_set_flip_vertically_on_load(flipY ? GL_TRUE : GL_FALSE);
+
+    stbi_uc* image = stbi_load(filename, &w, &h, &channels, 4);
+
+    if (image) {
+        texID = create_texture2D(w, h, image);
+        stbi_image_free(image);
+    }
+    else {
+        printf("load image \"%s\" failed.\n", filename);
+    }
+
+    return texID;
+}
+
+uiHandle load_image(const wchar_t* filename)
+{
+}
+
+// 更新图片区域 (RGBA)
+int update_image(uiHandle image, int x, int y, int w, int h, const void* data)
+{
+    GLuint texID = (GLuint) image;
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glBindTexture(GL_TEXTURE_2D, GL_NONE);
+}
+
+// 删除图片
+void delete_image(uiHandle image)
+{
+    GLuint texID = (GLuint) image;
+    glDeleteTextures(1, &texID);
+}
+
+} // namespace minimgui

@@ -37,6 +37,9 @@ void draw_ui();
 
 int main(int argc, char* argv[])
 {
+    (void) argc;
+    (void) argv;
+
     initgraph("MiniGui", screen.x, screen.y, VG_SIZEABLE);
     set_title("minivg 图形库");
 
@@ -187,7 +190,7 @@ void display()
 {
     // 清屏
     // clear(196, 196, 196);
-    drawimage(loadimage(L"background.jpg"), 0.0f, 0.0f, screen.x, screen.y);
+    drawimage(loadimage(L"assets/background.jpg"), 0.0f, 0.0f, screen.x, screen.y);
 
     // test_draw();
     // test_cmdlist();
@@ -296,13 +299,13 @@ void show_image()
         slider("height", &size.y, 0.0f, 512.0f);
 
         static uiFlags align = UI_FLAGS_NONE;
-        checkbox("左", &align, UI_LEFT);
+        checkbox(u8"左", &align, UI_LEFT);
         sameline();
-        checkbox("右", &align, UI_RIGHT);
+        checkbox(u8"右", &align, UI_RIGHT);
         sameline();
-        checkbox("上", &align, UI_TOP);
+        checkbox(u8"上", &align, UI_TOP);
         sameline();
-        checkbox("下", &align, UI_BOTTOM);
+        checkbox(u8"下", &align, UI_BOTTOM);
         // image("image", g_image, imageSize, size, align);
 
         end_window();
@@ -314,6 +317,7 @@ void draw_ui()
     using namespace minimgui;
 
     begin_context(nullptr);
+    begin_frame();
 
     static float fSize      = 100.0f;
     static float fThickness = 10.0f;
@@ -352,6 +356,7 @@ void draw_ui()
     // 显示演示窗口
     show_demo();
 
-    end_context(nullptr);
-    render(nullptr);
+    end_frame();
+    render();
+    end_context();
 }

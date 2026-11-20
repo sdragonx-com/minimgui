@@ -1,5 +1,9 @@
 ﻿#include "pch.h"
 
+// stb
+// #define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 bool vsync   = true;             // 是否垂直同步
 vec2i screen = vec2i(1280, 720); // 窗口大小
 vec2f mouse;                     // 鼠标位置
@@ -101,3 +105,57 @@ void draw_cube(float x1, float y1, float z1, float x2, float y2, float z2)
     draw_elements(GL_TRIANGLES, vs, indices, 36u);
 }
 
+// create texture2D from data
+GLuint create_texture2D(int w, int h, GLenum format, const void* data, GLenum dataFormat)
+{
+    GLuint texID = 0;
+
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+
+    // set filter mode
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    // set wrap mode
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return texID;
+}
+
+// load texture2D from file
+GLuint load_texture2D(const char* filename, bool flipY)
+{
+    GLuint texID = 0;
+    int w, h, channels;
+
+    stbi_set_flip_vertically_on_load(flipY ? GL_TRUE : GL_FALSE);
+
+    stbi_uc* image = stbi_load(filename, &w, &h, &channels, 0);
+
+    if (image) {
+        printf("loadimage \"%s\" %dx%d.\n", filename, w, h);
+
+        GLenum format;
+        if (channels == 1)
+            format = GL_RED;
+        else if (channels == 3)
+            format = GL_RGB;
+        else if (channels == 4)
+            format = GL_RGBA;
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        texID = create_texture2D(w, h, format, image, format);
+
+        stbi_image_free(image);
+    }
+    else {
+        printf("load image \"%s\" failed.\n", filename);
+    }
+
+    return texID;
+}

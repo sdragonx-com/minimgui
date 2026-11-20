@@ -7,6 +7,7 @@
 #include <minimgui/ui_demo.h>
 #include <minimgui/ui_gfx.h>
 
+// debug
 #if defined(UI_BACKEND_GDIPLUS)
 #include "minimgui/backends/ui_impl_gdiplus.h"
 #else
@@ -29,29 +30,29 @@ minimgui::uiHandle g_image = 0;
 // int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 int main(int argc, char* argv[])
 {
+    (void) argc;
+    (void) argv;
+
     HWND hwnd = init_window(_T("Win32 程序"), 1280, 800, true);
-    HDC hdc   = GetDC(hwnd);
 
     #if defined(UI_BACKEND_GDIPLUS)
-    // 初始化Gdiplus环境
+    // 初始化 Gdiplus 环境
     Gdiplus::GdiplusStartup(&g_token, &g_input, NULL);
 
     #endif
 
     minimgui::init_gui();
-    minimgui::init_win32(hwnd, hdc);
+    minimgui::init_win32(hwnd, false);
 
-    g_image = minimgui::load_image("lena_std.png");
+    g_image = minimgui::load_image("assets\\lena_std.png");
     printf("load image: %lld\n", g_image);
 
     while (running()) {
         do_events();
     }
 
-    ReleaseDC(hwnd, hdc);
-
     #if defined(UI_BACKEND_GDIPLUS)
-    // 释放Gdiplus环境
+    // 释放 Gdiplus 环境
     Gdiplus::GdiplusShutdown(g_token);
     #endif
 
@@ -245,13 +246,13 @@ void show_image()
         slider("height", &size.y, 0.0f, 512.0f);
 
         static uiFlags align = UI_FLAGS_NONE;
-        checkbox("左", &align, UI_LEFT);
+        checkbox(u8"左", &align, UI_LEFT);
         sameline();
-        checkbox("右", &align, UI_RIGHT);
+        checkbox(u8"右", &align, UI_RIGHT);
         sameline();
-        checkbox("上", &align, UI_TOP);
+        checkbox(u8"上", &align, UI_TOP);
         sameline();
-        checkbox("下", &align, UI_BOTTOM);
+        checkbox(u8"下", &align, UI_BOTTOM);
         image("image", g_image, imageSize, size, align);
 
         end_window();
@@ -267,10 +268,9 @@ void display(HDC hdc)
     clear(0x404040);
 
     begin_context(hdc);
+    begin_frame();
 
     // if (custom_test(L"test", 400.0f, 500.0f, 100.0f, 40.0f)) {printf("click custom\n"); }
-
-
 
     static float fSize      = 100.0f;
     static float fThickness = 10.0f;
@@ -281,6 +281,30 @@ void display(HDC hdc)
     if (begin_window("design", nullptr, uiVec2(814.0f, 412.0f), uiVec2(400.0f, 300.0f))) {
         show_menu();
 
+        if (begin_tabs("aaa")) {
+            static int tabID = 0;
+            for (int i = 0; i < 5; ++i) {
+                if (begin_tabsheet(format("tab %d", i))) {
+                    tabID = i;
+                    button("test");
+                    switch (i) {
+                    case 0:
+                        for (int j = 0; j < 10; ++j) {
+                            label("label %d", j);
+                        }
+                        break;
+                    case 1:
+                        slider("thickness", &fThickness, 0.0f, 100.0f);
+                        break;
+                    }
+
+                    end_tabsheet();
+                }
+            }
+            end_tabs();
+        }
+
+        //*
         slider("size", &fSize, 0.0f, 500.0f);
         slider("thickness", &fThickness, 0.0f, 100.0f);
 
@@ -305,6 +329,7 @@ void display(HDC hdc)
                 }
             }
         }
+        //*/
 
         end_window();
     }
@@ -326,6 +351,9 @@ void display(HDC hdc)
     show_debug(nullptr);
     */
 
-    end_context(hdc);
-    render(hdc);
+    end_frame();
+    render();
+    end_context();
+
+    // printf("draw...\n");
 }

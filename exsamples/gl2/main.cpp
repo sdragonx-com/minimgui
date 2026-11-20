@@ -59,6 +59,9 @@ void draw_imgui(GLFWwindow* window);
 int main(int argc, char* argv[])
 // int _tmain(int argc, TCHAR* argv[])
 {
+    (void) argc;
+    (void) argv;
+
     // init glfw, glew
     GLFWwindow* window = initgl("OpenGL Sample", screen.x, screen.y, true);
     if (window == NULL) {
@@ -71,7 +74,7 @@ int main(int argc, char* argv[])
     minimgui::init_gl2(nullptr);
 
     // 加载纹理
-    g_image = minimgui::load_image("background.jpg");
+    g_image = minimgui::load_image("assets/background.jpg");
 
     // 创建字体
 
@@ -106,7 +109,7 @@ GLFWwindow* initgl(const std::string& title, int width, int height, bool resizab
         return nullptr;
     }
 
-    // 初始化GL配置
+    // 初始化 OpenGL 配置
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
@@ -450,13 +453,13 @@ void show_image()
         slider("height", &size.y, 0.0f, 512.0f);
 
         static uiFlags align = UI_FLAGS_NONE;
-        checkbox("左", &align, UI_LEFT);
+        checkbox(u8"左", &align, UI_LEFT);
         sameline();
-        checkbox("右", &align, UI_RIGHT);
+        checkbox(u8"右", &align, UI_RIGHT);
         sameline();
-        checkbox("上", &align, UI_TOP);
+        checkbox(u8"上", &align, UI_TOP);
         sameline();
-        checkbox("下", &align, UI_BOTTOM);
+        checkbox(u8"下", &align, UI_BOTTOM);
         image("image", g_image, imageSize, size, align);
 
         end_window();
@@ -472,6 +475,7 @@ void draw_imgui(GLFWwindow* window)
     using namespace minimgui;
 
     begin_context(window);
+    begin_frame();
 
     static bool bFill       = true;
     static float fSize      = 100.0f;
@@ -482,6 +486,30 @@ void draw_imgui(GLFWwindow* window)
     //*
     if (begin_window("design", nullptr, uiVec2(814.0f, 412.0f), uiVec2(400.0f, 300.0f))) {
         show_menu();
+
+        if (begin_tabs("aaa")) {
+            static int tabID = 0;
+            for (int i = 0; i < 5; ++i) {
+                if (begin_tabsheet(format("tab %d", i))) {
+                    tabID = i;
+
+                    button("test");
+                    switch (i) {
+                    case 0:
+                        for (int j = 0; j < 10; ++j) {
+                            label("label %d", j);
+                        }
+                        break;
+                    case 1:
+                        slider("thickness", &fThickness, 0.0f, 100.0f);
+                        break;
+                    }
+
+                    end_tabsheet();
+                }
+            }
+            end_tabs();
+        }
 
         checkbox("fill", &bFill);
         slider("size", &fSize, 0.0f, 500.0f);
@@ -522,23 +550,9 @@ void draw_imgui(GLFWwindow* window)
     glPolygonMode(GL_FRONT, bFill ? GL_FILL : GL_LINE);
 
     // 显示演示窗口
-    try {
-        show_demo();
-    }
-    catch (const std::exception& e) {
-        // 打印异常类型和内容
-        printf("Catch exception: %s\n", e.what());
+    show_demo();
 
-        // 如果你在 Windows 下用 Qt，用 qDebug() 甚至能直接弹窗或者输出到控制台
-        // qDebug() << "Exception:" << e.what();
-
-        __debugbreak(); // 直接触发断点，这时候看调用栈！
-    }
-    catch (...) {
-        printf("Unknown exception!\n");
-        __debugbreak();
-    }
-
-    end_context(window);
-    render(window);
+    end_frame();
+    render();
+    end_context();
 }

@@ -25,72 +25,11 @@
     #define GLM_ENABLE_EXPERIMENTAL
 #endif
 
-// #include <glm/glm.hpp>
-// #include <glm/gtc/matrix_transform.hpp>
-// #include <glm/gtc/quaternion.hpp>
-// #include <glm/gtc/type_ptr.hpp>
-// #include <glm/gtx/io.hpp>
-#include <minimgui/ui_std.h>
-
-#if defined(CGL_USE_GLM98) || (defined(__BORLANDC__) && !defined(__clang__))
-
-    #include <cgl/external/glm/glm/glm.hpp>
-    #include <cgl/external/glm/glm/geometric.hpp>
-    #include <cgl/external/glm/glm/trigonometric.hpp>
-
-    #include <cgl/external/glm/glm/gtc/matrix_projection.hpp>
-    #include <cgl/external/glm/glm/gtc/matrix_transform.hpp>
-    #include <cgl/external/glm/glm/gtc/type_ptr.hpp>
-
-    #include <cgl/external/glm/glm/gtx/euler_angles.hpp>
-    #include <cgl/external/glm/glm/gtx/intersect.hpp>
-    #include <cgl/external/glm/glm/gtx/matrix_decompose.hpp>
-    #include <cgl/external/glm/glm/gtx/normal.hpp>
-    #include <cgl/external/glm/glm/gtx/rotate_vector.hpp>
-    #include <cgl/external/glm/glm/gtx/quaternion.hpp>
-
-    #include <cgl/external/glm/glm/quat.hpp>
-
-#else // CGL_USE_GLM98
-
-    // glm 1.0.1
-    #if !defined(GLM_ENABLE_EXPERIMENTAL)
-        #define GLM_ENABLE_EXPERIMENTAL
-    #endif
-
-    // #define GLM_EXTERNAL_TEMPLATE
-    // #define GLM_CONFIG_SWIZZLE
-    // #define GLM_SILENT_WARNINGS
-
-    #include <glm/glm.hpp>
-    #include <glm/gtc/matrix_transform.hpp>
-    #include <glm/gtc/quaternion.hpp>
-    #include <glm/gtc/type_ptr.hpp>
-
-    #include <glm/ext.hpp>
-    #include <glm/gtx/intersect.hpp>
-    #include <glm/gtx/io.hpp>
-    #include <glm/gtx/matrix_decompose.hpp>
-    #include <glm/gtx/normal.hpp>
-    #include <glm/gtx/quaternion.hpp>
-    #include <glm/gtx/rotate_vector.hpp>
-    #include <glm/gtx/vector_angle.hpp>
-
-    #ifndef GLM_API
-        #define GLM_API     inline
-        #define GLM_INS_API inline
-    #endif
-
-    #ifndef GLM_CLASS_TYPEDEF
-        #define GLM_CLASS_TYPEDEF CGL_CLASS_TYPEDEF
-    #endif
-
-#endif // CGL_USE_GLM98
-
-// SOIL2
-#include <SOIL2/SOIL2.h>
-
-// imgui
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/io.hpp>
 
 #if defined(__BORLANDC__) || defined(_MSC_VER)
 
@@ -100,12 +39,12 @@
     #if defined(_M_AMD64) || defined(_M_X64)
         #pragma comment(lib, "x64/glew32s.lib")
         #pragma comment(lib, "x64/glfw3.lib")
-        #pragma comment(lib, "x64/SOIL2.lib")
+        // #pragma comment(lib, "x64/SOIL2.lib")
         // #pragma comment(lib, "x64/imgui.lib")
     #else
         #pragma comment(lib, "x86/glew32s.lib")
-        // #pragma comment(lib, "x86/glfw3.lib")
-        #pragma comment(lib, "x86/SOIL2.lib")
+        #pragma comment(lib, "x86/glfw3.lib")
+        // #pragma comment(lib, "x86/SOIL2.lib")
         // #pragma comment(lib, "x86/imgui.lib")
     #endif
 #endif
@@ -142,3 +81,9 @@ int draw_elements(int shape, const vertex* vs, const uint32_t* indices, size_t s
 
 // 绘制立方体
 void draw_cube(float x1, float y1, float z1, float x2, float y2, float z2);
+
+// create texture2D from data
+GLuint create_texture2D(int w, int h, GLenum format, const void* data, GLenum dataFormat);
+
+// load texture2D from file
+GLuint load_texture2D(const char* filename, bool flipY);
